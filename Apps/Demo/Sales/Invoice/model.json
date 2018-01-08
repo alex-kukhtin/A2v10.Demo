@@ -1,0 +1,14 @@
+﻿{
+  "schema": "a2demo",
+  "model": "Invoice",
+  "actions": {
+    "index": {
+      "index": true,
+      "view": "index.view"
+    },
+    "edit": {
+      "view": "invoice.view",
+      "template": "invoice.template"
+    }
+  }
+}
