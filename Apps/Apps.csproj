@@ -47,6 +47,7 @@
     <Content Include="Admin\Identity\User\edit.template.js" />
     <Content Include="Admin\Identity\User\index.template.js" />
     <Content Include="Admin\Identity\User\password.template.js" />
+    <Content Include="Demo\Agent\editCustomer.template.js" />
     <Content Include="Demo\Sales\Invoice\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -56,6 +57,8 @@
     <None Include="Admin\Identity\Group\model.json" />
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
+    <None Include="Demo\Agent\model.json" />
+    <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
   </ItemGroup>
   <ItemGroup>
@@ -99,7 +102,20 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Content Include="Demo\Sales\Invoice\invoice.template.js" />
     <Content Include="Demo\Sales\Invoice\invoice.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Sales\Customer\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Agent\editCustomer.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Agent\browseCustomer.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>

@@ -1,35 +1,57 @@
 <!-- Invoice index -->
-<Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:sys="clr-namespace:System;assembly=mscorlib"
-      >
-    <Page.Resources>
-        <sys:String x:Key="OpenUrl">/Sales/Invoice/Edit</sys:String>
-    </Page.Resources>
+<Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml">
     <Page.Toolbar>
         <Toolbar>
-            <Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">Создать</Button>
-            <Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
-            <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='Удалить документ?'}">Удалить</Button>
-            <Separator />
+            <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
+            <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Button Icon="Close" Toolbar.Align="Right"
+                    Command="{BindCmd Close}">Закрыть</Button>
         </Toolbar>
     </Page.Toolbar>
-    <Page.CollectionView>
-        <CollectionView ItemsSource="{Bind Documents}" RunAt="ServerUrl"/>
-    </Page.CollectionView>
-    <Page.Pager>
-        <Pager Source="{Bind Parent.Pager}" />
-    </Page.Pager>
-    <DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
-				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
-                DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">
-        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"/>
-		<DataGridColumn Header="Номер" Content="{Bind No}" />
-        <DataGridColumn Header="Покупатель" Content="{Bind Agent.Name}" />
-        <DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right"/>
-		<DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
-	</DataGrid>
+    <Page.Taskpad>
+        <Taskpad Width="290">
+            
+        </Taskpad>
+    </Page.Taskpad>
+    <Grid Columns="150, 150, 150, 1*">
+        <Header Grid.ColSpan="4" Badge="{Bind Document.Id}">Счет покупателю</Header>
+        <DatePicker Grid.Row="2" Label="Дата" Value="{Bind Document.Date}"/>
+        <TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
+        <Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
+        <TextBox Grid.Row="3" Grid.ColSpan="3"
+            Label="Покупатель" Value="{Bind Document.Agent.Name}" ValidateValue="{Bind Document.Agent}">
+            <TextBox.AddOns>
+                <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+            </TextBox.AddOns>
+        </TextBox>
+        <Block Grid.Row="4" Grid.ColSpan="4">
+            <Toolbar Style="Transparent">
+                <Button Icon="Add" Content="Добавить строку" />
+            </Toolbar>
+            <Table Width="100%" GridLines="Both" Border="True"
+                   Columns="Fit,Auto,Fit,100,100,100">
+                <Table.Header>
+                    <TableRow>
+                        <TableCell Wrap="NoWrap">№ п.п.</TableCell>
+                        <TableCell>Товар</TableCell>
+                        <TableCell Wrap="NoWrap">Ед. изм.</TableCell>
+                        <TableCell>Количество</TableCell>
+                        <TableCell>Цена</TableCell>
+                        <TableCell>Сумма</TableCell>
+                    </TableRow>
+                </Table.Header>
+                <Table.Footer>
+                    <TableRow>
+                        <TableCell ColSpan="5">Итого</TableCell>
+                        <TableCell Content="{Bind Document.Sum, DataType=Currency}" Align="Right" Bold="True"/>
+                    </TableRow>
+                </Table.Footer>
+            </Table>
+        </Block>
+        <TextBox Grid.Row="6" Grid.ColSpan="4" Label="Примечание" Multiline="True"
+                 Value="{Bind Document.Memo}" Rows="3"/>
+    </Grid>
 </Page>
 
     

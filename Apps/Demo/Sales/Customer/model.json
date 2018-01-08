@@ -1,15 +1,14 @@
 ﻿{
   "schema": "a2demo",
-  "model": "Invoice",
+  "model": "Customer",
   "actions": {
     "index": {
       "index": true,
       "view": "index.view"
     },
     "edit": {
-      "model": "Document",
-      "view": "invoice.view",
-      "template": "invoice.template"
+      "view": "customer.view",
+      "template": "customer.template"
     }
   }
 }

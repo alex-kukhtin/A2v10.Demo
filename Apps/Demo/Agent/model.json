@@ -1,0 +1,15 @@
+﻿{
+  "schema": "a2demo",
+  "dialogs": {
+    "browseCustomer": {
+      "index": true,
+      "model": "Customer",
+      "view": "browseCustomer.dialog"
+    },
+    "editCustomer": {
+      "model": "Agent",
+      "view": "editCustomer.dialog",
+      "template":  "editCustomer.template"
+    }
+  }
+}
