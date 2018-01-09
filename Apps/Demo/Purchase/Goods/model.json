@@ -1,6 +1,6 @@
 ﻿{
   "schema": "a2demo",
-  "model": "Customer",
+  "model": "Goods",
   "actions": {
     "index": {
       "index": true,

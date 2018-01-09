@@ -4,11 +4,11 @@
       xmlns:sys="clr-namespace:System;assembly=mscorlib"
       >
     <Page.Resources>
-        <sys:String x:Key="OpenUrl">/Agent/EditCustomer</sys:String>
+        <sys:String x:Key="OpenUrl">/Agent/EditSupplier</sys:String>
     </Page.Resources>
     <Page.Toolbar>
         <Toolbar>
-            <Button Icon="Add" Tip="Создать покупателя" Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Создать</Button>
+            <Button Icon="Add" Tip="Создать поставщика" Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Создать</Button>
             <Button Icon="Edit" Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Изменить</Button>
             <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Agents}, Confirm='Удалить покупателя?'}">Удалить</Button>
             <Separator />

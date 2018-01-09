@@ -1,0 +1,9 @@
+<!-- Document.Info -->
+<Panel xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml" 
+       Header="Информация о документе">
+    <PropertyGrid>
+        <PropertyGridItem Name="Создан" Content="Document.DateCreated"></PropertyGridItem>
+    </PropertyGrid>
+</Panel>
+
+    

@@ -6,10 +6,20 @@
       "model": "Customer",
       "view": "browseCustomer.dialog"
     },
+    "browseSupplier": {
+      "index": true,
+      "model": "Supplier",
+      "view": "browseSupplier.dialog"
+    },
     "editCustomer": {
       "model": "Agent",
       "view": "editCustomer.dialog",
-      "template":  "editCustomer.template"
+      "template": "editCustomer.template"
+    },
+    "editSupplier": {
+      "model": "Agent",
+      "view": "editSupplier.dialog",
+      "template": "editSupplier.template"
     }
   }
 }

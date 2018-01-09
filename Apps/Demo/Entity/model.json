@@ -1,0 +1,21 @@
+﻿{
+  "schema": "a2demo",
+  "dialogs": {
+    "browseGoods": {
+      "index": true,
+      "model": "Goods",
+      "view": "browseGoods.dialog"
+    },
+    "editGoods": {
+      "model": "Entity",
+      "view": "editGoods.dialog",
+      "template": "editGoods.template"
+    }
+  },
+  "commands": {
+    "findArticle": {
+      "type": "sql",
+      "procedure": "Entity.FindArticle"
+    }
+  }
+}

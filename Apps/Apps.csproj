@@ -47,19 +47,29 @@
     <Content Include="Admin\Identity\User\edit.template.js" />
     <Content Include="Admin\Identity\User\index.template.js" />
     <Content Include="Admin\Identity\User\password.template.js" />
+    <Content Include="Demo\Agent\editSupplier.template.js" />
     <Content Include="Demo\Agent\editCustomer.template.js" />
+    <Content Include="Demo\Entity\editGoods.template.js" />
+    <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />
     <Content Include="Demo\Sales\Invoice\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Demo\Sales\Waybill\waybill.template.js" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Admin\Identity\Group\model.json" />
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
     <None Include="Demo\Agent\model.json" />
+    <None Include="Demo\Document\model.json" />
+    <None Include="Demo\Entity\model.json" />
+    <None Include="Demo\Purchase\Goods\model.json" />
+    <None Include="Demo\Purchase\Supplier\model.json" />
+    <None Include="Demo\Purchase\WaybillIn\model.json" />
     <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
+    <None Include="Demo\Sales\Waybill\model.json" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Admin\Identity\Group\browse.dialog.xaml">
@@ -116,6 +126,50 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Demo\Agent\browseCustomer.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Purchase\Goods\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Entity\editGoods.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Entity\browseGoods.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Document\info.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Purchase\Supplier\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Agent\editSupplier.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Sales\Waybill\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Sales\Waybill\waybill.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Purchase\WaybillIn\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Purchase\WaybillIn\waybillIn.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Demo\Agent\browseSupplier.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>

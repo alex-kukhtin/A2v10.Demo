@@ -10,6 +10,7 @@ const template = {
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',
+        'Document.DepFrom': 'Выберите склад',
         'Document.Rows[].Entity': 'Выберите товар',
         'Document.Rows[].Price': 'Укажите цену'
     },
@@ -28,9 +29,8 @@ function modelLoad(root) {
 }
 
 function documentCreate(doc) {
-    const vm = doc.$vm;
     doc.Date = du.today();
-    doc.Kind = 'Invoice';
+    doc.Kind = 'Waybill';
     doc.Rows.$append();
     const dat = { Id: doc.Id, Kind: doc.Kind };
     vm.$invoke("nextDocNo", dat, '/Document').then(r => doc.No = r.Result.DocNo);

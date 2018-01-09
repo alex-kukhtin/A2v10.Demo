@@ -22,7 +22,7 @@
         </Taskpad>
     </Page.Taskpad>
     <Grid Columns="150, 150, 150, 1*">
-        <Header Grid.ColSpan="4" Badge="{Bind Document.Id}">Счет покупателю</Header>
+        <Header Grid.ColSpan="4" Badge="{Bind Document.Id}">Расходная накладная</Header>
         <DatePicker Grid.Row="2" Label="Дата" Value="{Bind Document.Date}"/>
         <TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
         <Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
@@ -32,7 +32,8 @@
                 <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
             </TextBox.AddOns>
         </TextBox>
-        <Block Grid.Row="4" Grid.ColSpan="4">
+        <ComboBox Grid.Row="4" Grid.ColSpan="3" Label="Склад" ItemsSource="{Bind Warehouses}" Value="{Bind Document.DepFrom}"/>
+        <Block Grid.Row="5" Grid.ColSpan="4">
             <Toolbar Style="Transparent">
                 <Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>
             </Toolbar>

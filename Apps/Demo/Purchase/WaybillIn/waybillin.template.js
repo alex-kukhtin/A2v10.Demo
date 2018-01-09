@@ -1,4 +1,4 @@
-﻿/*invoice template*/
+﻿/*waybill in template*/
 
 const utils = require('std:utils');
 const du = utils.date;
@@ -9,7 +9,8 @@ const template = {
         'TDocument.Sum': totalSum,
     },
     validators: {
-        'Document.Agent': 'Выберите покупателя',
+        'Document.Agent': 'Выберите поставщика',
+        'Document.DepTo': 'Выберите склад',
         'Document.Rows[].Entity': 'Выберите товар',
         'Document.Rows[].Price': 'Укажите цену'
     },
@@ -28,9 +29,8 @@ function modelLoad(root) {
 }
 
 function documentCreate(doc) {
-    const vm = doc.$vm;
     doc.Date = du.today();
-    doc.Kind = 'Invoice';
+    doc.Kind = 'WaybillIn';
     doc.Rows.$append();
     const dat = { Id: doc.Id, Kind: doc.Kind };
     vm.$invoke("nextDocNo", dat, '/Document').then(r => doc.No = r.Result.DocNo);
@@ -63,3 +63,4 @@ function findArticle(entity) {
             row.Entity.$empty();
     });
 }
+
