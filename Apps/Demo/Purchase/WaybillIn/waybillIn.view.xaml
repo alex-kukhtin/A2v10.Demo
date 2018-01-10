@@ -11,14 +11,7 @@
     </Page.Toolbar>
     <Page.Taskpad>
         <Taskpad Width="290">
-            <Panel Header="Информация о документе" Style="Info"
-                   Collapsible="True" Padding="0, 6">
-                <PropertyGrid GridLines="Horizontal" Compact="True">
-                    <PropertyGridItem Name="Код" Content="{Bind Document.Id}"/>
-                    <PropertyGridItem Name="Создан" Content="{Bind Document.DateCreated, DataType=DateTime}"/>
-                    <PropertyGridItem Name="Изменен" Content="{Bind Document.DateModified, DataType=DateTime}"/>
-                </PropertyGrid>
-            </Panel>
+            <ContentControl Content="{Source Path='../../Document/Info'}"/>
         </Taskpad>
     </Page.Taskpad>
     <Grid Columns="150, 150, 150, 1*">

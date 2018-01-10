@@ -6,18 +6,17 @@
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
             <Button Icon="Close" Toolbar.Align="Right"
-                    Command="{BindCmd Close}">Закрыть</Button>
+              Command="{BindCmd Close}">Закрыть</Button>
         </Toolbar>
     </Page.Toolbar>
     <Page.Taskpad>
         <Taskpad Width="290">
-            <Panel Header="Информация о документе" Style="Info"
-                   Collapsible="True" Padding="0, 6">
-                <PropertyGrid GridLines="Horizontal" Compact="True">
-                    <PropertyGridItem Name="Код" Content="{Bind Document.Id}"/>
-                    <PropertyGridItem Name="Создан" Content="{Bind Document.DateCreated, DataType=DateTime}"/>
-                    <PropertyGridItem Name="Изменен" Content="{Bind Document.DateModified, DataType=DateTime}"/>
-                </PropertyGrid>
+            <ContentControl Content="{Source Path='../../Document/Info'}"/>
+            <Panel Header="Отгрузки" Style="Yellow" Collapsible="True">
+                
+            </Panel>
+            <Panel Header="Оплаты" Style="Green" Collapsible="True">
+                
             </Panel>
         </Taskpad>
     </Page.Taskpad>
@@ -27,7 +26,7 @@
         <TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
         <Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
         <TextBox Grid.Row="3" Grid.ColSpan="3"
-            Label="Покупатель" Value="{Bind Document.Agent.Name}" ValidateValue="{Bind Document.Agent}">
+        Label="Покупатель" Value="{Bind Document.Agent.Name}" ValidateValue="{Bind Document.Agent}">
             <TextBox.AddOns>
                 <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
             </TextBox.AddOns>
@@ -37,8 +36,8 @@
                 <Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>
             </Toolbar>
             <Table ItemsSource="{Bind Document.Rows}"
-                    Width="100%" GridLines="Both" Border="True" Background="Paper"
-                    Columns="Fit,100,Auto,Fit,100,100,100,Fit">
+              Width="100%" GridLines="Both" Border="True" Background="Paper"
+              Columns="Fit,100,Auto,Fit,100,100,100,Fit">
                 <Table.Header>
                     <TableRow>
                         <TableCell Wrap="NoWrap">№ п.п.</TableCell>
@@ -75,8 +74,7 @@
             </Table>
         </Block>
         <TextBox Grid.Row="6" Grid.ColSpan="4" Label="Примечание" Multiline="True"
-                 Value="{Bind Document.Memo}" Rows="3"/>
+             Value="{Bind Document.Memo}" Rows="3"/>
     </Grid>
 </Page>
 
-    

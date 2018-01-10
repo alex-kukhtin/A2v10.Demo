@@ -347,12 +347,12 @@ create procedure a2demo.[Document.Load]
 as
 begin
 	set nocount on;
-	select [Document!TDocument!Object] = null, [Id!!Id] = Id, Kind, [Date], [No], [Sum], Tag, Memo,
+	select [Document!TDocument!Object] = null, [Id!!Id] = d.Id, Kind, [Date], [No], [Sum], Tag, d.Memo,
 		[Agent!TAgent!RefId] = Agent, [DepFrom!TAgent!RefId] = DepFrom, [DepTo!TAgent!RefId] = DepTo,
-		DateCreated, DateModified,
+		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified,
 		[Rows!TRow!Array] = null
-	from a2demo.Documents 
-	where Id=@Id;
+	from a2demo.Documents d 
+	where d.Id=@Id;
 
 	select [!TRow!Array] = null, [Id!!Id] = Id, [!TDocument.Rows!ParentId] = Document, [RowNo!!RowNumber] = RowNo,
 		[Entity!TEntity!RefId] = Entity, Qty, Price, [Sum] 
@@ -362,6 +362,11 @@ begin
 	select [!TAgent!Map] = null, [Id!!Id] = a.Id,  [Name!!Name] = a.[Name], a.Code 
 	from a2demo.Agents a 
 		inner join a2demo.Documents d on a.Id in (d.Agent, d.DepFrom, d.DepTo)
+	where d.Id=@Id;
+
+	select [!TUser!Map] = null, [Id!!Id] = u.Id,  [Name!!Name] = isnull(u.PersonName, u.UserName)
+	from a2security.ViewUsers u
+		inner join a2demo.Documents d on u.Id in (d.UserCreated, d.UserModified)
 	where d.Id=@Id;
 
 	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article,

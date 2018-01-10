@@ -22,7 +22,7 @@ const template = {
 
 module.exports = template;
 
-function modelLoad(root) {
+function modelLoad(root, caller) {
     if (root.Document.$isNew)
         documentCreate(root.Document);
 }

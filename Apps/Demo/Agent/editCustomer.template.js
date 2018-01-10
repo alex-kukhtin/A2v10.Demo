@@ -12,7 +12,7 @@ const template = {
     }
 };
 
-function modelLoad(root) {
+function modelLoad(root, caller) {
     const ag = root.Agent;
     if (ag.$isNew)
         customerCreate(ag);

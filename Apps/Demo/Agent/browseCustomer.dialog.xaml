@@ -16,7 +16,7 @@
             <TextBox Label="Поиск:" Value="{Bind Parent.Filter.Fragment}" 
                      Placeholder="фрагмент имени или кода" Width="240">
                 <TextBox.AddOns>
-                    <Hyperlink Icon="Search" Command="{BindCmd Reload}"/>
+                    <Hyperlink Icon="Search"/>
                 </TextBox.AddOns>
             </TextBox>
 
