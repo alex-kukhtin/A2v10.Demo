@@ -14,7 +14,7 @@
     <CollectionView ItemsSource="{Bind Agents}" RunAt="Server" Filter="Fragment">
         <Toolbar Style="Transparent">
             <TextBox Label="Поиск:" Value="{Bind Parent.Filter.Fragment}" 
-                     Placeholder="фрагмент имени или кода ЕГРПОУ" Width="260">
+                     Placeholder="фрагмент имени или кода ЕГРПОУ" Width="300">
                 <TextBox.AddOns>
                     <Hyperlink Icon="Search"/>
                 </TextBox.AddOns>
