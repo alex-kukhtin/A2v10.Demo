@@ -1,10 +1,10 @@
-/* 20180108-1000 */
+ï»¿/* 20180108-1000 */
 /*
 ------------------------------------------------
-Copyright © 2008-2018 Alex Kukhtin
+Copyright Â© 2008-2018 Alex Kukhtin
 
-Last updated : 08 jan 2018 12:30
-module version : 1000
+Last updated : 13 jan 2018 12:30
+module version : 1001
 */
 ------------------------------------------------
 set noexec off;
@@ -22,9 +22,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 1000);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 1001);
 else
-	update a2sys.Versions set [Version] = 1000 where Module = N'demo';
+	update a2sys.Versions set [Version] = 1001 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -868,7 +868,7 @@ begin
 	if not exists (select * from a2sys.SysParams where [Name] = N'AppTitle')
 		insert into a2sys.SysParams([Name], StringValue) values (N'AppTitle', N'A2:Demo'); 
 	if not exists (select * from a2sys.SysParams where [Name] = N'AppSubTitle')
-		insert into a2sys.SysParams([Name], StringValue) values (N'AppSubTitle', N'äåìîíñòğàöèîííîå ïğèëîæåíèå'); 
+		insert into a2sys.SysParams([Name], StringValue) values (N'AppSubTitle', N'Ğ´ĞµĞ¼Ğ¾Ğ½ÑÑ‚Ñ€Ğ°Ñ†Ğ¸Ğ¾Ğ½Ğ½Ğ¾Ğµ Ğ¿Ñ€Ğ¸Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ'); 
 end
 go
 ------------------------------------------------
@@ -878,18 +878,18 @@ begin
 	insert into @menu(id, p0, [name], [url], icon, [order])
 	values
 		(1, null, N'Default',     null,          null,     0),
-		(10, 1,   N'Ïğîäàæè',     N'sales',	     null,     10),
-		(20, 1,   N'Çàêóïêè',     N'purchase',	 null,     20),
-		(31, 10,  N'Äîêóìåíòû',   null,		     null,     10),
-		(32, 10,  N'Ñïğàâî÷íèêè', null,		     null,     20),
-		(33, 20,  N'Äîêóìåíòû',   null,		     null,     10),
-		(34, 20,  N'Ñïğàâî÷íèêè', null,		     null,     20),
-		(41, 31,  N'Ñ÷åòà',		  N'invoice',    N'file',  10),
-		(42, 31,  N'Íàêëàäíûå',	  N'waybill',    N'file',  20),
-		(43, 32,  N'Ïîêóïàòåëè',  N'customer',   N'user',  10),
-		(44, 33,  N'Íàêëàäíûå',	  N'waybillin',  N'file',  10),
-		(45, 34,  N'Ïîñòàâùèêè',  N'supplier',   N'user',  10),
-		(46, 34,  N'Òîâàğû',      N'goods',      N'steps', 20);
+		(10, 1,   N'ĞŸÑ€Ğ¾Ğ´Ğ°Ğ¶Ğ¸',     N'sales',	     null,     10),
+		(20, 1,   N'Ğ—Ğ°ĞºÑƒĞ¿ĞºĞ¸',     N'purchase',	 null,     20),
+		(31, 10,  N'Ğ”Ğ¾ĞºÑƒĞ¼ĞµĞ½Ñ‚Ñ‹',   null,		     null,     10),
+		(32, 10,  N'Ğ¡Ğ¿Ñ€Ğ°Ğ²Ğ¾Ñ‡Ğ½Ğ¸ĞºĞ¸', null,		     null,     20),
+		(33, 20,  N'Ğ”Ğ¾ĞºÑƒĞ¼ĞµĞ½Ñ‚Ñ‹',   null,		     null,     10),
+		(34, 20,  N'Ğ¡Ğ¿Ñ€Ğ°Ğ²Ğ¾Ñ‡Ğ½Ğ¸ĞºĞ¸', null,		     null,     20),
+		(41, 31,  N'Ğ¡Ñ‡ĞµÑ‚Ğ°',		  N'invoice',    N'file',  10),
+		(42, 31,  N'ĞĞ°ĞºĞ»Ğ°Ğ´Ğ½Ñ‹Ğµ',	  N'waybill',    N'file',  20),
+		(43, 32,  N'ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»Ğ¸',  N'customer',   N'user',  10),
+		(44, 33,  N'ĞĞ°ĞºĞ»Ğ°Ğ´Ğ½Ñ‹Ğµ',	  N'waybillin',  N'file',  10),
+		(45, 34,  N'ĞŸĞ¾ÑÑ‚Ğ°Ğ²Ñ‰Ğ¸ĞºĞ¸',  N'supplier',   N'user',  10),
+		(46, 34,  N'Ğ¢Ğ¾Ğ²Ğ°Ñ€Ñ‹',      N'goods',      N'steps', 20);
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200
@@ -918,11 +918,11 @@ if not exists(select * from a2demo.Units)
 begin
 	insert into a2demo.Units(Short, [Name], UserCreated, UserModified)
 		values 
-		(N'øò.', N'Øòóêà', 0, 0),
-		(N'êã.', N'Êèëîãğàìì', 0, 0),
-		(N'ë.', N'Ëèòğ', 0, 0),
-		(N'ïà÷.', N'Ïà÷êà', 0, 0),
-		(N'ì.', N'Ìåòğ', 0, 0);
+		(N'ÑˆÑ‚.',  N'Ğ¨Ñ‚ÑƒĞºĞ°', 0, 0),
+		(N'ĞºĞ³.',  N'ĞšĞ¸Ğ»Ğ¾Ğ³Ñ€Ğ°Ğ¼Ğ¼', 0, 0),
+		(N'Ğ».',   N'Ğ›Ğ¸Ñ‚Ñ€', 0, 0),
+		(N'Ğ¿Ğ°Ñ‡.', N'ĞŸĞ°Ñ‡ĞºĞ°', 0, 0),
+		(N'Ğ¼.',   N'ĞœĞµÑ‚Ñ€', 0, 0);
 end
 go
 ------------------------------------------------
@@ -930,8 +930,8 @@ if not exists(select * from a2demo.Agents where Kind=N'Warehouse')
 begin
 	insert into a2demo.Agents(Kind, [Name], UserCreated, UserModified)
 		values 
-		(N'Warehouse', N'Îñíîâíîé ñêëàä', 0, 0),
-		(N'Warehouse', N'Ñêëàä ìàòåğèàëîâ', 0, 0);
+		(N'Warehouse', N'ĞÑĞ½Ğ¾Ğ²Ğ½Ğ¾Ğ¹ ÑĞºĞ»Ğ°Ğ´', 0, 0),
+		(N'Warehouse', N'Ğ¡ĞºĞ»Ğ°Ğ´ Ğ¼Ğ°Ñ‚ĞµÑ€Ğ¸Ğ°Ğ»Ğ¾Ğ²', 0, 0);
 end
 go
 ------------------------------------------------
