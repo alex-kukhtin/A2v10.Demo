@@ -31,7 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="A2v10.Xaml">
-      <HintPath>..\..\..\inetpub\wwwroot\a2v10\bin\A2v10.Xaml.dll</HintPath>
+      <HintPath>..\..\web\bin\A2v10.Xaml.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
