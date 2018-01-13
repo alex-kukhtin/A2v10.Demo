@@ -7,6 +7,7 @@ const template = {
     properties: {
         'TRow.Sum': { get: getRowSum, set: setRowSum },
         'TDocument.Sum': totalSum,
+        'TDocument.$canShipment': canShipment
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',
@@ -17,6 +18,15 @@ const template = {
         'Model.load': modelLoad,
         'Document.Rows[].add': (arr, row) => row.Qty = 1,
         'Document.Rows[].Entity.Article.change': findArticle
+    },
+    commands: {
+        apply: { 
+            canExec: isValidDocument,
+            exec: applyDocument
+        },
+        unApply: unApplyDocument,
+        createShipment,
+        createPayment
     }
 };
 
@@ -62,4 +72,38 @@ function findArticle(entity) {
         else
             row.Entity.$empty();
     });
+}
+
+async function applyDocument(doc) {
+    const vm = doc.$vm;
+    await vm.$invoke('apply', { Id: doc.Id }, '/document');
+    vm.$requery();
+}
+
+async function unApplyDocument(doc) {
+    const vm = doc.$vm;
+    await vm.$invoke('unApply', { Id: doc.Id }, '/document');
+    vm.$requery();
+}
+
+function isValidDocument(doc) {
+    return doc.$valid;
+}
+
+async function createShipment(doc) {
+    const vm = doc.$vm;
+    let result = await vm.$invoke('createShipment', { Id: doc.Id });
+    if (result.Document)
+        doc.Shipment.$append(result.Document);
+}
+
+async function createPayment(doc) {
+    const vm = doc.$vm;
+    vm.$alert('Пока не реализовано');
+    //let result = await vm.$invoke('createPayment', { Id: doc.Id });
+    //vm.$open(result.Document.Id)
+}
+
+function canShipment() {
+    return this.Shipment.Count == 0;
 }

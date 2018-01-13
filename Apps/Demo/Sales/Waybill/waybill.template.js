@@ -18,6 +18,13 @@ const template = {
         'Model.load': modelLoad,
         'Document.Rows[].add': (arr, row) => row.Qty = 1,
         'Document.Rows[].Entity.Article.change': findArticle
+    },
+    commands: {
+        apply: {
+            canExec: isValidDocument,
+            exec: applyDocument
+        },
+        unApply: unApplyDocument
     }
 };
 
@@ -62,4 +69,20 @@ function findArticle(entity) {
         else
             row.Entity.$empty();
     });
+}
+
+async function applyDocument(doc) {
+    const vm = doc.$vm;
+    await vm.$invoke('apply', { Id: doc.Id }, '/document');
+    vm.$requery();
+}
+
+async function unApplyDocument(doc) {
+    const vm = doc.$vm;
+    await vm.$invoke('unApply', { Id: doc.Id }, '/document');
+    vm.$requery();
+}
+
+function isValidDocument(doc) {
+    return doc.$valid;
 }

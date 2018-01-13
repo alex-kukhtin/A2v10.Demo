@@ -31,7 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="A2v10.Xaml">
-      <HintPath>..\..\web\bin\A2v10.Xaml.dll</HintPath>
+      <HintPath>..\..\a2v10\bin\A2v10.Xaml.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -55,9 +55,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Demo\Sales\Invoice\index.template.js" />
+    <Content Include="Demo\Sales\Waybill\index.template.js" />
     <Content Include="Demo\Sales\Waybill\waybill.template.js" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\a2v10\Web.config">
+      <Link>Web.config</Link>
+    </None>
     <None Include="Admin\Identity\Group\model.json" />
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
@@ -72,46 +77,45 @@
     <None Include="Demo\Sales\Waybill\model.json" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Admin\Identity\Group\browse.dialog.xaml">
+    <Content Include="Admin\Identity\Group\browse.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\Group\edit.dialog.xaml">
+    </Content>
+    <Content Include="Admin\Identity\Group\edit.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\Group\index.view.xaml">
+    </Content>
+    <Content Include="Admin\Identity\Group\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\Role\edit.dialog.xaml">
+    </Content>
+    <Content Include="Admin\Identity\Role\edit.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\Role\index.view.xaml">
+    </Content>
+    <Content Include="Admin\Identity\Role\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\User\browse.dialog.xaml">
+    </Content>
+    <Content Include="Admin\Identity\User\browse.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\User\create.dialog.xaml">
+    </Content>
+    <Content Include="Admin\Identity\User\create.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Content>
+    <Content Include="Admin\Identity\User\edit.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\User\edit.dialog.xaml">
+    </Content>
+    <Content Include="Admin\Identity\User\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\User\index.view.xaml">
+    </Content>
+    <Content Include="Admin\Identity\User\password.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Admin\Identity\User\password.dialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
+    </Content>
     <Content Include="Demo\Sales\Invoice\invoice.template.js" />
     <Content Include="Demo\Sales\Invoice\invoice.view.xaml">
       <Generator>MSBuild:Compile</Generator>

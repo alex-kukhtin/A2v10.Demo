@@ -5,6 +5,8 @@
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Separator/>
+            <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='WaybillIn', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
                     Command="{BindCmd Close}">Закрыть</Button>
         </Toolbar>

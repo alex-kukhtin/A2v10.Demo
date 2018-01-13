@@ -5,6 +5,10 @@
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Separator/>
+            <Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}, SaveRequired=True, Confirm='Провести документ?'}" If="{Bind !Document.Done}"/>
+            <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}, SaveRequired=True, Confirm='Отменить проведение документа?'}" If="{Bind Document.Done}"/>
+            <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
               Command="{BindCmd Close}">Закрыть</Button>
         </Toolbar>
@@ -12,11 +16,35 @@
     <Page.Taskpad>
         <Taskpad Width="290">
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
-            <Panel Header="Отгрузки" Style="Yellow" Collapsible="True">
-                
+            <Panel Header="Отгрузки"
+                   Style="Yellow" Collapsible="True" If="{Bind Document.Done}">
+                <Table If="{Bind !Document.$canShipment}" Compact="True" Width="100%" GridLines="Both" Background="Paper"
+                       ItemsSource="{Bind Document.Shipment}">
+                    <Table.Header>
+                        <TableRow>
+                            <TableCell>Код</TableCell>
+                            <TableCell>Дата</TableCell>
+                            <TableCell>Номер</TableCell>
+                            <TableCell>Сумма</TableCell>
+                        </TableRow>
+                    </Table.Header>
+                    <TableRow>
+                        <TableCell Align="Right">
+                            <Hyperlink Icon="FileContent" Content="{Bind Id}" Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"></Hyperlink>
+                        </TableCell>
+                        <TableCell Content="{Bind Date, DataType=Date}" Align="Center"/>
+                        <TableCell Content="{Bind No}" Align="Right"/>
+                        <TableCell Content="{Bind Sum, DataType=Currency}" Align="Right"/>
+                    </TableRow>
+                </Table>
+                <Hyperlink Icon="FileContent" If="{Bind Document.$canShipment}" Content="Создать документ" 
+                           Command="{BindCmd Execute, CommandName='createShipment', Argument={Bind Document}, Confirm='Создать расходную накладную?'}" 
+                           Padding="6" Block="True"/>
             </Panel>
-            <Panel Header="Оплаты" Style="Green" Collapsible="True">
-                
+            <Panel Header="Оплаты" Style="Green" Collapsible="True" If="{Bind Document.Done}">
+                <Hyperlink Icon="FileContent" Content="Создать документ" 
+                           Command="{BindCmd Execute, CommandName='createPayment', Argument={Bind Document}, Confirm='Создать документ оплаты?'}" 
+                           Padding="6" Block="True"/>
             </Panel>
         </Taskpad>
     </Page.Taskpad>

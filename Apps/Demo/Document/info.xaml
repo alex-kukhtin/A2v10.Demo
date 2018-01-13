@@ -2,7 +2,7 @@
 <Panel xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
       Header="Информация о документе" Style="Info"
       Collapsible="True" Padding="0, 6">
-  <PropertyGrid GridLines="Horizontal" Compact="True">
+  <PropertyGrid GridLines="Horizontal" Compact="True" Striped="True">
     <PropertyGridItem Name="Код" Content="{Bind Document.Id}"/>
         <PropertyGridItem Name="Создан">
             <Text>

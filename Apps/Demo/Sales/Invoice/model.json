@@ -4,12 +4,26 @@
   "actions": {
     "index": {
       "index": true,
+      "template": "index.template",
       "view": "index.view"
     },
     "edit": {
       "model": "Document",
       "view": "invoice.view",
       "template": "invoice.template"
+    }
+  },
+  "commands": {
+    "createShipment": {
+      "type": "sql",
+      "procedure": "Invoice.CreateShipment"
+    }
+  },
+  "reports": {
+    "invoice": {
+      "type": "stimulsoft",
+      "report": "invoice",
+      "model": "Document"
     }
   }
 }
