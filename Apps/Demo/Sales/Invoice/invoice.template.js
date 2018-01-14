@@ -21,10 +21,15 @@ const template = {
     },
     commands: {
         apply: { 
-            canExec: isValidDocument,
+            saveRequired: true,
+            validRequired: true,
+            confirm: 'Провести документ?',
             exec: applyDocument
         },
-        unApply: unApplyDocument,
+        unApply: {
+            confirm: 'Отменить проведение документа?',
+            exec: unApplyDocument
+        },
         createShipment,
         createPayment
     }
@@ -86,22 +91,20 @@ async function unApplyDocument(doc) {
     vm.$requery();
 }
 
-function isValidDocument(doc) {
-    return doc.$valid;
-}
-
 async function createShipment(doc) {
     const vm = doc.$vm;
     let result = await vm.$invoke('createShipment', { Id: doc.Id });
-    if (result.Document)
-        doc.Shipment.$append(result.Document);
+    if (result.Document) {
+        vm.$navigate('/sales/waybill/edit', result.Document.Id)
+        //doc.Shipment.$append(result.Document);
+    }
 }
 
 async function createPayment(doc) {
     const vm = doc.$vm;
     vm.$alert('Пока не реализовано');
     //let result = await vm.$invoke('createPayment', { Id: doc.Id });
-    //vm.$open(result.Document.Id)
+    //vm.$navigate('/document/payment/edit', result.Document.Id)
 }
 
 function canShipment() {

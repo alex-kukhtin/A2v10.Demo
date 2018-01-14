@@ -1,10 +1,9 @@
-﻿/* 20180108-1000 */
-/*
+﻿/*
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 13 jan 2018 12:30
-module version : 1001
+Last updated : 14 jan 2018 
+module version : 7006
 */
 ------------------------------------------------
 set noexec off;
@@ -22,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 1001);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7006);
 else
-	update a2sys.Versions set [Version] = 1001 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7006 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -310,10 +309,12 @@ begin
 		[Agent.Id!TAgent!Id], [Agent.Name!TAgent!Name], 
 		[DepFrom.Id!TAgent!Id],  [DepFrom.Name!TAgent!Name],
 		[DepTo.Id!TAgent!Id],  [DepTo.Name!TAgent!Name], Done,
+		DateCreated, DateModified, 
 		[!!RowNumber])
 	as(
 		select d.Id, d.[Date], d.[No], d.[Sum], d.Memo, 
 			d.Agent, a.[Name], d.DepFrom, f.[Name], d.DepTo, t.[Name], d.Done,
+			d.DateCreated, d.DateModified, 
 			[!!RowNumber] = row_number() over (
 			 order by
 				case when @Order=N'Id' and @Dir = @Asc then d.Id end asc,
@@ -335,10 +336,16 @@ begin
 			left join a2demo.Agents t on d.DepTo = t.Id
 		where d.Kind=@Kind
 	)
-	select [Documents!TDocument!Array]=null, *, [!!RowCount] = (select count(1) from T)
+	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, [!!RowCount] = (select count(1) from T)
+	into #tmp
 	from T
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
+
+	select * from #tmp
 	order by [!!RowNumber];
+
+	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Links!ParentId] = Parent, Kind, [Date], [No], [Sum]
+	from a2demo.Documents where Parent in (select [Id!!Id] from #tmp)
 
 	select [!$System!] = null, [!!PageSize] = 20;
 end
@@ -501,7 +508,7 @@ begin
 	select @done = Done from a2demo.Documents where Id=@Id;
 	if @done = 0
 	begin
-		update a2demo.Documents set Done = 1 where Id=@Id;
+		update a2demo.Documents set Done = 1, DateModified = getdate(), UserModified = @UserId where Id=@Id;
 		-- todo: log
 	end
 end
@@ -522,10 +529,10 @@ begin
 	if @done = 1
 	begin
 		if exists(select * from a2demo.Documents where Parent=@Id)
-			throw 60000, N'Проведение отменить невозможно. Существуют дочерние документы', 0;
+			throw 60000, N'UI:Проведение отменить невозможно. Существуют дочерние документы.', 0;
 		else 
 		begin
-			update a2demo.Documents set Done = 0 where Id=@Id;
+			update a2demo.Documents set Done = 0, DateModified = getdate(), UserModified = @UserId  where Id=@Id;
 			-- todo: log
 		end
 	end
@@ -907,11 +914,16 @@ begin
 	set transaction isolation level read uncommitted;
 	select [Entity!TEntity!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Article, Tag, Memo,
 		[Unit!TUnit!RefId] = Unit,
-		DateCreated, DateModified
+		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified
 	from a2demo.Entities where Id=@Id and Void=0;
 
 	select [Units!TUnit!Array] = null, [Id!!Id] = Id, [Short!!Name] = Short, [Name]
 	from a2demo.Units;
+
+	select [!TUser!Map] = null, [Id!!Id] = u.Id,  [Name!!Name] = isnull(u.PersonName, u.UserName)
+	from a2security.ViewUsers u
+		inner join a2demo.Entities e on u.Id in (e.UserCreated, e.UserModified)
+	where e.Id=@Id;
 end
 go
 ------------------------------------------------

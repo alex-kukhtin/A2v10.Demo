@@ -1,13 +1,14 @@
 <!-- Invoice index -->
-<Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml">
+<Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
+      Title="{Bind Document.Id, Format='Счет [{0}]'}">
     <Page.Toolbar>
         <Toolbar>
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
             <Separator/>
-            <Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}, SaveRequired=True, Confirm='Провести документ?'}" If="{Bind !Document.Done}"/>
-            <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}, SaveRequired=True, Confirm='Отменить проведение документа?'}" If="{Bind Document.Done}"/>
+            <Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}}" If="{Bind !Document.Done}"/>
+            <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}}" If="{Bind Document.Done}"/>
             <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
               Command="{BindCmd Close}">Закрыть</Button>
@@ -16,20 +17,14 @@
     <Page.Taskpad>
         <Taskpad Width="290">
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
-            <Panel Header="Отгрузки"
+            <Panel Header="Отгрузки" Padding="6"
                    Style="Yellow" Collapsible="True" If="{Bind Document.Done}">
-                <Table If="{Bind !Document.$canShipment}" Compact="True" Width="100%" GridLines="Both" Background="Paper"
+                <Table If="{Bind !Document.$canShipment}" Compact="True" Width="100%" 
+                       GridLines="Horizontal" 
+                       Header="Код:R,Дата:C,Номер:R,Сумма:R" Columns="Fit,Auto,Auto,Auto"
                        ItemsSource="{Bind Document.Shipment}">
-                    <Table.Header>
-                        <TableRow>
-                            <TableCell>Код</TableCell>
-                            <TableCell>Дата</TableCell>
-                            <TableCell>Номер</TableCell>
-                            <TableCell>Сумма</TableCell>
-                        </TableRow>
-                    </Table.Header>
                     <TableRow>
-                        <TableCell Align="Right">
+                        <TableCell Align="Right" Wrap="NoWrap">
                             <Hyperlink Icon="FileContent" Content="{Bind Id}" Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"></Hyperlink>
                         </TableCell>
                         <TableCell Content="{Bind Date, DataType=Date}" Align="Center"/>

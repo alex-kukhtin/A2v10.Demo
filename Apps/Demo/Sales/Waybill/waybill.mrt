@@ -659,7 +659,7 @@
               <Name>Text1</Name>
               <Page isRef="11" />
               <Parent isRef="39" />
-              <Text>{Document.Rows.RowNo + 1}</Text>
+              <Text>{Document.Rows.RowNo}</Text>
               <TextBrush>Black</TextBrush>
               <Type>Expression</Type>
               <VertAlignment>Center</VertAlignment>
@@ -890,10 +890,10 @@
     <value>Stimulsoft.Report.Dll</value>
   </ReferencedAssemblies>
   <ReportAlias>Report</ReportAlias>
-  <ReportChanged>1/13/2018 4:13:36 PM</ReportChanged>
+  <ReportChanged>1/13/2018 11:13:41 PM</ReportChanged>
   <ReportCreated>2/1/2014 7:58:43 AM</ReportCreated>
   <ReportFile>C:\inetpub\wwwroot\A2v10.Demo\Apps\Demo\Sales\Waybill\waybill.mrt</ReportFile>
-  <ReportGuid>a0e5a4b6dd5f4a6898fa640ece1ba757</ReportGuid>
+  <ReportGuid>c842b12c4e984981b26394655599f484</ReportGuid>
   <ReportName>Report</ReportName>
   <ReportUnit>Centimeters</ReportUnit>
   <ReportVersion>2016.1.0</ReportVersion>

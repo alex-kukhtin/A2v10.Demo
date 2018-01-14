@@ -617,7 +617,7 @@
               <Name>Text1</Name>
               <Page isRef="10" />
               <Parent isRef="36" />
-              <Text>{Document.Rows.RowNo + 1}</Text>
+              <Text>{Document.Rows.RowNo}</Text>
               <TextBrush>Black</TextBrush>
               <Type>Expression</Type>
               <VertAlignment>Center</VertAlignment>
@@ -848,10 +848,10 @@
     <value>Stimulsoft.Report.Dll</value>
   </ReferencedAssemblies>
   <ReportAlias>Report</ReportAlias>
-  <ReportChanged>1/13/2018 4:03:15 PM</ReportChanged>
+  <ReportChanged>1/13/2018 11:13:11 PM</ReportChanged>
   <ReportCreated>2/1/2014 7:58:43 AM</ReportCreated>
   <ReportFile>C:\inetpub\wwwroot\A2v10.Demo\Apps\Demo\Sales\Invoice\Invoice.mrt</ReportFile>
-  <ReportGuid>ff06922e9e5d4171a12a3db55e0ee5ed</ReportGuid>
+  <ReportGuid>98ce5ea60c6d4f238e99c592505f0df6</ReportGuid>
   <ReportName>Report</ReportName>
   <ReportUnit>Centimeters</ReportUnit>
   <ReportVersion>2016.1.0</ReportVersion>

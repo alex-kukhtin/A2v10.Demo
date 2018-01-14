@@ -25,12 +25,29 @@
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
                 MarkerStyle="Both" Mark="{Bind $Mark}">
-        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"/>
+        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
         <DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
         <DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right"/>
         <DataGridColumn Header="Покупатель" Content="{Bind Agent.Name}" />
         <DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
 		<DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
+        <!--
+        <DataGridColumn Header="Создал/Изменил" Content="{Bind DateModified, DataType=DateTime}"/>
+        -->
+        <DataGrid.RowDetails>
+            <DataGridRowDetails Visible="{Bind $HasDetails}" Activate="Cell">
+                <StackPanel Orientation="Horizontal">
+                    <Label Margin="0,6,0,0">Отгрузки:</Label>
+                    <StackPanel Orientation="Vertical">
+                        <Repeater ItemsSource="{Bind $Shipment}">
+                            <Hyperlink Icon="FileLink" 
+                                       Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"
+                                       Content="{Bind $DocName}" />
+                        </Repeater>
+                    </StackPanel>
+                </StackPanel>
+            </DataGridRowDetails>
+        </DataGrid.RowDetails>
     </DataGrid>
 </Page>
 
