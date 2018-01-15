@@ -16,6 +16,11 @@
     <Page.Taskpad>
         <Taskpad Width="290">
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
+            <Panel Header="Основание" Icon="Link" If="{Bind Document.$HasParent}" Style="Warning" Padding="6">
+                <Hyperlink Icon="FileLink"
+                           Content="{Bind Document.Parent.$Name}"
+                           Command="{BindCmd Open, Url='/Sales/Invoice/Edit', Argument={Bind Document.Parent}}"/>
+            </Panel>
         </Taskpad>
     </Page.Taskpad>
     <Grid Columns="150, 150, 150, 1*">

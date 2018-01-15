@@ -17,7 +17,7 @@
     <Page.Taskpad>
         <Taskpad Width="290">
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
-            <Panel Header="Отгрузки" Padding="6"
+            <Panel Header="Отгрузки" Padding="6" Icon="Link"
                    Style="Yellow" Collapsible="True" If="{Bind Document.Done}">
                 <Table If="{Bind !Document.$canShipment}" Compact="True" Width="100%" 
                        GridLines="Horizontal" 
@@ -36,7 +36,8 @@
                            Command="{BindCmd Execute, CommandName='createShipment', Argument={Bind Document}, Confirm='Создать расходную накладную?'}" 
                            Padding="6" Block="True"/>
             </Panel>
-            <Panel Header="Оплаты" Style="Green" Collapsible="True" If="{Bind Document.Done}">
+            <Panel Header="Оплаты" Style="Green" Icon="Link"
+                   Collapsible="True" If="{Bind Document.Done}">
                 <Hyperlink Icon="FileContent" Content="Создать документ" 
                            Command="{BindCmd Execute, CommandName='createPayment', Argument={Bind Document}, Confirm='Создать документ оплаты?'}" 
                            Padding="6" Block="True"/>

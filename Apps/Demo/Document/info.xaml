@@ -1,6 +1,6 @@
 <!-- Document.Info -->
 <Panel xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
-      Header="Информация о документе" Style="Info"
+      Header="Информация о документе" Style="Info" Icon="InfoOutline"
       Collapsible="True" Padding="0, 6">
   <PropertyGrid GridLines="Horizontal" Compact="True" >
     <PropertyGridItem Name="Код" Content="{Bind Document.Id}"/>

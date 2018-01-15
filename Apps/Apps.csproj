@@ -49,6 +49,7 @@
     <Content Include="Admin\Identity\User\password.template.js" />
     <Content Include="Demo\Agent\editSupplier.template.js" />
     <Content Include="Demo\Agent\editCustomer.template.js" />
+    <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
     <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />
     <Content Include="Demo\Sales\Invoice\index.view.xaml">

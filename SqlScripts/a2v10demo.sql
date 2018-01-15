@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 14 jan 2018 
-module version : 7006
+Last updated : 15 jan 2018 
+module version : 7007
 */
 ------------------------------------------------
 set noexec off;
@@ -21,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7006);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7007);
 else
-	update a2sys.Versions set [Version] = 7006 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7007 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -309,12 +309,12 @@ begin
 		[Agent.Id!TAgent!Id], [Agent.Name!TAgent!Name], 
 		[DepFrom.Id!TAgent!Id],  [DepFrom.Name!TAgent!Name],
 		[DepTo.Id!TAgent!Id],  [DepTo.Name!TAgent!Name], Done,
-		DateCreated, DateModified, 
+		DateCreated, DateModified, [Parent!TDocParent!RefId],
 		[!!RowNumber])
 	as(
 		select d.Id, d.[Date], d.[No], d.[Sum], d.Memo, 
 			d.Agent, a.[Name], d.DepFrom, f.[Name], d.DepTo, t.[Name], d.Done,
-			d.DateCreated, d.DateModified, 
+			d.DateCreated, d.DateModified, d.Parent,
 			[!!RowNumber] = row_number() over (
 			 order by
 				case when @Order=N'Id' and @Dir = @Asc then d.Id end asc,
@@ -336,7 +336,8 @@ begin
 			left join a2demo.Agents t on d.DepTo = t.Id
 		where d.Kind=@Kind
 	)
-	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, [!!RowCount] = (select count(1) from T)
+	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, 
+		[!!RowCount] = (select count(1) from T)
 	into #tmp
 	from T
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
@@ -346,6 +347,9 @@ begin
 
 	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Links!ParentId] = Parent, Kind, [Date], [No], [Sum]
 	from a2demo.Documents where Parent in (select [Id!!Id] from #tmp)
+
+	select [!TDocParent!Map] = null, [Id!!Id] = Id, Kind, [Date], [No], [Sum]
+	from a2demo.Documents where Id in (select [Parent!TDocParent!RefId] from #tmp);
 
 	select [!$System!] = null, [!!PageSize] = 20;
 end
@@ -366,7 +370,8 @@ begin
 		Done,
 		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified,
 		[Rows!TRow!Array] = null,
-		[Shipment!TDocLink!Array] = null
+		[Shipment!TDocLink!Array] = null,
+		[Parent!TDocParent!RefId] = Parent
 	from a2demo.Documents d 
 	where d.Id=@Id;
 
@@ -396,6 +401,11 @@ begin
 		[No], [Date], [Sum]
 	from a2demo.Documents where Parent = @Id
 	order by Id;
+
+	-- parent document
+	select [!TDocParent!Map] = null, [Id!!Id] = p.Id, p.[No], p.[Date], p.[Sum]
+	from a2demo.Documents d inner join a2demo.Documents p on d.Parent = p.Id
+	where d.Id = @Id;
 
 	select [Warehouses!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
 	from a2demo.Agents where Kind=N'Warehouse';
@@ -529,7 +539,7 @@ begin
 	if @done = 1
 	begin
 		if exists(select * from a2demo.Documents where Parent=@Id)
-			throw 60000, N'UI:Проведение отменить невозможно. Существуют дочерние документы.', 0;
+			throw 60000, N'UI:Проведение отменить невозможно.\nСуществуют дочерние документы.', 0;
 		else 
 		begin
 			update a2demo.Documents set Done = 0, DateModified = getdate(), UserModified = @UserId  where Id=@Id;
@@ -938,7 +948,7 @@ as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, Tag, e.Memo,
+	select top(1) [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, Tag, e.Memo,
 		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.Short,
 		e.DateCreated, e.DateModified
 	from a2demo.Entities e 
