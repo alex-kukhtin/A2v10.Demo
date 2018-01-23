@@ -24,7 +24,8 @@
     <DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">
-        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"/>
+        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Wrap="NoWrap"
+                        Command="{BindCmd Open, Url={StaticResource OpenUrl}}"/>
         <DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
         <DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right"/>
         <DataGridColumn Header="Поставщик" Content="{Bind Agent.Name}" />

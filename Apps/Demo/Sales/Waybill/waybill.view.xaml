@@ -5,6 +5,10 @@
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Separator/>
+            <Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}, SaveRequired=True, Confirm='Провести документ?'}" If="{Bind !Document.Done}"/>
+            <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}, SaveRequired=True, Confirm='Отменить проведение документа?'}" If="{Bind Document.Done}"/>
+            <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='Waybill', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
                     Command="{BindCmd Close}">Закрыть</Button>
         </Toolbar>
@@ -12,6 +16,11 @@
     <Page.Taskpad>
         <Taskpad Width="290">
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
+            <Panel Header="Основание" Icon="Link" If="{Bind Document.$HasParent}" Style="Warning" Padding="6">
+                <Hyperlink Icon="FileLink"
+                           Content="{Bind Document.Parent.$Name}"
+                           Command="{BindCmd Open, Url='/Sales/Invoice/Edit', Argument={Bind Document.Parent}}"/>
+            </Panel>
         </Taskpad>
     </Page.Taskpad>
     <Grid Columns="150, 150, 150, 1*">

@@ -4,6 +4,14 @@
     "nextDocNo": {
       "type": "sql",
       "procedure": "NextDocNo"
+    },
+    "apply": {
+      "type": "sql",
+      "procedure": "Document.Apply"
+    },
+    "unApply": {
+      "type": "sql",
+      "procedure": "Document.UnApply"
     }
   }
 }

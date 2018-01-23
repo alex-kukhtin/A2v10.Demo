@@ -4,7 +4,10 @@
 const template = {
     properties: {
         "TGroup.$IdOrNew"() { return this.$isNew ? "Новая" : this.Id; },
-        "TGroup.$KeyDisabled"() { return this.Id < 100; }
+        "TGroup.$KeyDisabled"() { return this.Id !== 0 && this.Id < 100; }
+    },
+    events: {
+        "Group.Users[].adding": onAddingUsers
     },
 	validators: {
         'Group.Name': [
@@ -13,20 +16,13 @@ const template = {
         ],
         "Group.Key":
         { valid: duplicateKey, async: true, msg: "Группа с таким ключом уже существует" }
-    },
-    commands: {
-        addUser
-	}
+    }
 };
 
-async function addUser(array) {
-    var vm = this.$vm;
-    let user = await vm.$showDialog('/Identity/User/Browse');
-    if (array.find((u) => u.Id === user.Id)) {
-        vm.$alert('Пользователь уже включен в группу');
-        return;
-    }
-    array.$append({ Id: user.Id, Name: user.Name, PersonName: user.PersonName });
+function onAddingUsers(array, elem) {
+    if (array.find(item => item.Id === elem.Id))
+        return false; // такой пользователь уже есть
+    return true;
 }
 
 function duplicateName(group, value) {

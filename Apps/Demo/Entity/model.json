@@ -16,6 +16,10 @@
     "findArticle": {
       "type": "sql",
       "procedure": "Entity.FindArticle"
+    },
+    "duplicateArticle": {
+      "type": "sql",
+      "procedure": "Entity.Article.CheckDuplicate"
     }
   }
 }

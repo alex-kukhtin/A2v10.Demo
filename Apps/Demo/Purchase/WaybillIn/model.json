@@ -11,5 +11,11 @@
       "view": "waybillin.view",
       "template": "waybillin.template"
     }
+  },
+  "reports": {
+    "waybillIn": {
+      "report": "waybillIn",
+      "model": "Document"
+    }
   }
 }

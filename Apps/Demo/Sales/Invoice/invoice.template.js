@@ -1,12 +1,12 @@
 ﻿/*invoice template*/
 
-const utils = require('std:utils');
-const du = utils.date;
+const cmn = require('document/common');
 
 const template = {
     properties: {
-        'TRow.Sum': { get: getRowSum, set: setRowSum },
-        'TDocument.Sum': totalSum,
+        'TRow.Sum': cmn.rowSum,
+        'TDocument.Sum': cmn.docTotalSum,
+        'TDocument.$canShipment': canShipment
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',
@@ -16,7 +16,13 @@ const template = {
     events: {
         'Model.load': modelLoad,
         'Document.Rows[].add': (arr, row) => row.Qty = 1,
-        'Document.Rows[].Entity.Article.change': findArticle
+        'Document.Rows[].Entity.Article.change': cmn.findArticle
+    },
+    commands: {
+        apply: cmn.docApply,
+        unApply: cmn.docUnApply,
+        createShipment,
+        createPayment
     }
 };
 
@@ -24,42 +30,28 @@ module.exports = template;
 
 function modelLoad(root, caller) {
     if (root.Document.$isNew)
-        documentCreate(root.Document);
+        cmn.documentCreate(root.Document, 'Invoice');
 }
 
-function documentCreate(doc) {
+async function createShipment(doc) {
     const vm = doc.$vm;
-    doc.Date = du.today();
-    doc.Kind = 'Invoice';
-    doc.Rows.$append();
-    const dat = { Id: doc.Id, Kind: doc.Kind };
-    vm.$invoke("nextDocNo", dat, '/Document').then(r => doc.No = r.Result.DocNo);
+    let result = await vm.$invoke('createShipment', { Id: doc.Id });
+    if (result.Document) {
+        vm.$navigate('/sales/waybill/edit', result.Document.Id)
+        /*
+        А можно не открывать, а просто показать
+        doc.Shipment.$append(result.Document);
+        */
+    }
 }
 
-function getRowSum() {
-    return +(this.Price * this.Qty).toFixed(2);
+async function createPayment(doc) {
+    const vm = doc.$vm;
+    vm.$alert('Пока не реализовано');
+    //let result = await vm.$invoke('createPayment', { Id: doc.Id });
+    //vm.$navigate('/document/payment/edit', result.Document.Id)
 }
 
-function setRowSum(value) {
-    // ставим цену - сумма пересчитается
-    if (this.Qty)
-        this.Price = +(value / this.Qty).toFixed(2);
-    else
-        this.Pirce = 0;
-}
-
-function totalSum() {
-    return this.Rows.reduce((prev, curr) => prev + curr.Sum, 0);
-}
-
-function findArticle(entity) {
-    const vm = entity.$vm;
-    const row = entity.$parent;
-    const dat = { Article: entity.Article };
-    vm.$invoke('findArticle', dat, '/Entity').then(r => {
-        if ('Entity' in r)
-            row.Entity = r.Entity;
-        else
-            row.Entity.$empty();
-    });
+function canShipment() {
+    return this.Shipment.Count === 0;
 }

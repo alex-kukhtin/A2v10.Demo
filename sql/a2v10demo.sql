@@ -1,10 +1,9 @@
-/* 20180108-1000 */
-/*
+﻿/*
 ------------------------------------------------
-Copyright � 2008-2018 Alex Kukhtin
+Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 08 jan 2018 12:30
-module version : 1000
+Last updated : 23 jan 2018 
+module version : 7008
 */
 ------------------------------------------------
 set noexec off;
@@ -22,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 1000);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7008);
 else
-	update a2sys.Versions set [Version] = 1000 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7008 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -133,6 +132,7 @@ begin
 		Kind nvarchar(255) null,
 		Parent bigint null
 			constraint FK_Document_Parent_Documents foreign key references a2demo.Documents(Id),
+		Done bit not null constraint DF_Documents_Done default(0),
 		[Date] datetime null,
 		[No]   int      null,
 		Agent  bigint   null
@@ -152,6 +152,12 @@ begin
 		UserModified bigint not null
 			constraint FK_Documents_UserModified_Users foreign key references a2security.Users(Id)
 	);
+end
+go
+------------------------------------------------
+if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Documents' and COLUMN_NAME=N'Done'))
+begin
+	alter table a2demo.Documents add Done bit not null constraint DF_Documents_Done default(0) with values;
 end
 go
 ------------------------------------------------
@@ -283,12 +289,13 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Index]
-@UserId bigint,
-@Kind nvarchar(255),
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc'
+	@TenantId int,
+	@UserId bigint,
+	@Kind nvarchar(255),
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
 as
 begin
 	set nocount on;
@@ -302,11 +309,13 @@ begin
 	with T([Id!!Id], [Date], [No], [Sum], Memo, 
 		[Agent.Id!TAgent!Id], [Agent.Name!TAgent!Name], 
 		[DepFrom.Id!TAgent!Id],  [DepFrom.Name!TAgent!Name],
-		[DepTo.Id!TAgent!Id],  [DepTo.Name!TAgent!Name],
+		[DepTo.Id!TAgent!Id],  [DepTo.Name!TAgent!Name], Done,
+		DateCreated, DateModified, [ParentDoc!TDocParent!RefId],
 		[!!RowNumber])
 	as(
 		select d.Id, d.[Date], d.[No], d.[Sum], d.Memo, 
-			d.Agent, a.[Name], d.DepFrom, f.[Name], d.DepTo, t.[Name],
+			d.Agent, a.[Name], d.DepFrom, f.[Name], d.DepTo, t.[Name], d.Done,
+			d.DateCreated, d.DateModified, d.Parent,
 			[!!RowNumber] = row_number() over (
 			 order by
 				case when @Order=N'Id' and @Dir = @Asc then d.Id end asc,
@@ -328,10 +337,20 @@ begin
 			left join a2demo.Agents t on d.DepTo = t.Id
 		where d.Kind=@Kind
 	)
-	select [Documents!TDocument!Array]=null, *, [!!RowCount] = (select count(1) from T)
+	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, 
+		[!!RowCount] = (select count(1) from T)
+	into #tmp
 	from T
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
+
+	select * from #tmp
 	order by [!!RowNumber];
+
+	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Links!ParentId] = Parent, Kind, [Date], [No], [Sum]
+	from a2demo.Documents where Parent in (select [Id!!Id] from #tmp)
+
+	select [!TDocParent!Map] = null, [Id!!Id] = Id, Kind, [Date], [No], [Sum]
+	from a2demo.Documents where Id in (select [ParentDoc!TDocParent!RefId] from #tmp);
 
 	select [!$System!] = null, [!!PageSize] = 20;
 end
@@ -342,8 +361,70 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Load]
-@UserId bigint,
-@Id bigint = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	select [Document!TDocument!Object] = null, [Id!!Id] = d.Id, Kind, [Date], [No], [Sum], Tag, d.Memo,
+		[Agent!TAgent!RefId] = Agent, [DepFrom!TAgent!RefId] = DepFrom, [DepTo!TAgent!RefId] = DepTo,
+		Done,
+		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified,
+		[Rows!TRow!Array] = null,
+		[Shipment!TDocLink!Array] = null,
+		[ParentDoc!TDocParent!RefId] = Parent
+	from a2demo.Documents d 
+	where d.Id=@Id;
+
+	select [!TRow!Array] = null, [Id!!Id] = Id, [!TDocument.Rows!ParentId] = Document, [RowNo!!RowNumber] = RowNo,
+		[Entity!TEntity!RefId] = Entity, Qty, Price, [Sum] 
+	from a2demo.DocDetails where Document = @Id
+	order by RowNo;
+
+	select [!TAgent!Map] = null, [Id!!Id] = a.Id,  [Name!!Name] = a.[Name], a.Code 
+	from a2demo.Agents a 
+		inner join a2demo.Documents d on a.Id in (d.Agent, d.DepFrom, d.DepTo)
+	where d.Id=@Id;
+
+	select [!TUser!Map] = null, [Id!!Id] = u.Id,  [Name!!Name] = isnull(u.PersonName, u.UserName)
+	from a2security.ViewUsers u
+		inner join a2demo.Documents d on u.Id in (d.UserCreated, d.UserModified)
+	where d.Id=@Id;
+
+	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article,
+		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.[Short]
+	from a2demo.Entities e
+		inner join a2demo.DocDetails dd on e.Id = dd.Entity
+		left join a2demo.Units u on e.Unit = u.Id
+	where dd.Document = @Id;
+
+	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Shipment!ParentId] = Parent,
+		[No], [Date], [Sum]
+	from a2demo.Documents where Parent = @Id
+	order by Id;
+
+	-- parent document
+	select [!TDocParent!Map] = null, [Id!!Id] = p.Id, p.[No], p.[Date], p.[Sum]
+	from a2demo.Documents d inner join a2demo.Documents p on d.Parent = p.Id
+	where d.Id = @Id;
+
+	select [Warehouses!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+	from a2demo.Agents where Kind=N'Warehouse';
+
+	select [!$System!] = null, [!!ReadOnly] = Done 
+	from a2demo.Documents where Id=@Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.Report')
+	drop procedure a2demo.[Document.Report]
+go
+------------------------------------------------
+create procedure a2demo.[Document.Report]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
 as
 begin
 	set nocount on;
@@ -375,9 +456,6 @@ begin
 		inner join a2demo.DocDetails dd on e.Id = dd.Entity
 		left join a2demo.Units u on e.Unit = u.Id
 	where dd.Document = @Id;
-
-	select [Warehouses!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
-	from a2demo.Agents where Kind=N'Warehouse';
 end
 go
 ------------------------------------------------
@@ -386,6 +464,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[NextDocNo]
+	@TenantId int,
 	@UserId bigint,
 	@Id bigint,
 	@Kind nvarchar(255)
@@ -399,6 +478,168 @@ begin
 	where Id <> @Id and Kind = @Kind
 
 	select [Result!Result!Object]=null, [DocNo]=isnull(@DocNo, 0) + 1;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.Delete')
+	drop procedure a2demo.[Document.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Document.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read committed;
+	set xact_abort on;
+	declare @done bit;
+	select @done = Done from a2demo.Documents where Id=@Id;
+	if @done = 1
+		throw 60000, N'UI:Невозможно удалить проведенный документ.', 0;
+	else if exists(select * from a2demo.Documents where Parent=@Id)
+		throw 60000, N'UI:Невозможно удалить документ. Есть дочерние документы.', 0;
+	else
+	begin
+		delete from a2demo.DocDetails where Document=@Id;
+		delete from a2demo.Documents where Id=@Id;
+		-- todo: log
+	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.Apply')
+	drop procedure a2demo.[Document.Apply]
+go
+------------------------------------------------
+create procedure a2demo.[Document.Apply]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	declare @done bit;
+	select @done = Done from a2demo.Documents where Id=@Id;
+	if @done = 0
+	begin
+		update a2demo.Documents set Done = 1, DateModified = getdate(), UserModified = @UserId where Id=@Id;
+		-- todo: log
+	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.UnApply')
+	drop procedure a2demo.[Document.UnApply]
+go
+------------------------------------------------
+create procedure a2demo.[Document.UnApply]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	declare @done bit;
+	select @done = Done from a2demo.Documents where Id=@Id;
+	if @done = 1
+	begin
+		if exists(select * from a2demo.Documents where Parent=@Id)
+			throw 60000, N'UI:Проведение отменить невозможно.\nСуществуют дочерние документы.', 0;
+		else 
+		begin
+			update a2demo.Documents set Done = 0, DateModified = getdate(), UserModified = @UserId  where Id=@Id;
+			-- todo: log
+		end
+	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Invoice.Delete')
+	drop procedure a2demo.[Invoice.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Invoice.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Document.Delete] @TenantId, @UserId, @Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Waybill.Delete')
+	drop procedure a2demo.[Waybill.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Waybill.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Document.Delete] @TenantId, @UserId, @Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'WaybillIn.Delete')
+	drop procedure a2demo.[WaybillIn.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[WaybillIn.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Document.Delete] @TenantId, @UserId, @Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Invoice.CreateShipment')
+	drop procedure a2demo.[Invoice.CreateShipment]
+go
+------------------------------------------------
+create procedure a2demo.[Invoice.CreateShipment]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	declare @done bit;
+	declare @Kind nvarchar(255) = N'Waybill';
+	select @done = Done from a2demo.Documents where Id=@Id;
+	if @done = 0 return;
+	if exists(select * from a2demo.Documents where Kind=@Kind and Parent=@Id) return;
+	-- create shipment document
+	declare @output table(id bigint);
+	declare @NewId bigint;
+	declare @DocNo int;
+	select @DocNo=max([No]) from a2demo.Documents
+		where Kind = @Kind;
+
+	set @DocNo = isnull(@DocNo, 0) + 1;
+
+	insert into a2demo.Documents(Parent, Kind, [Date], [No], [Agent], [Sum], UserCreated, UserModified)
+		output inserted.Id into @output(id)
+	select Id, @Kind, a2sys.fn_trimtime(getdate()), @DocNo, Agent, [Sum], @UserId, @UserId
+		from a2demo.Documents where Id=@Id;
+
+	select top(1) @NewId = id from @output;
+
+	-- details
+	insert into a2demo.DocDetails (Document, Entity, Qty, Price, [Sum], RowNo)
+		select @NewId, Entity, Qty, Price, [Sum], RowNo
+		from a2demo.DocDetails where Document=@Id;
+
+	select [Document!TShipment!Object] = null, [Id!!Id] = Id, [Date], [Sum], [No]
+	from a2demo.Documents where Id=@NewId;
 end
 go
 ------------------------------------------------
@@ -422,10 +663,11 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Update]
-@UserId bigint,
-@Document a2demo.[Document.TableType] readonly,
-@Rows a2demo.[DocDetails.TableType] readonly,
-@RetId bigint = null output
+	@TenantId int,
+	@UserId bigint,
+	@Document a2demo.[Document.TableType] readonly,
+	@Rows a2demo.[DocDetails.TableType] readonly,
+	@RetId bigint = null output
 as
 begin
 	set nocount on;
@@ -475,7 +717,7 @@ begin
 	when not matched by source and target.Document = @RetId then delete;
 
 	-- todo: log
-	exec a2demo.[Document.Load] @UserId, @RetId;
+	exec a2demo.[Document.Load] @TenantId, @UserId, @RetId;
 end
 go
 ------------------------------------------------
@@ -484,13 +726,14 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Index]
-@UserId bigint,
-@Kind nvarchar(255),
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc',
-@Fragment nvarchar(255) = null
+	@TenantId int,
+	@UserId bigint,
+	@Kind nvarchar(255),
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
@@ -537,8 +780,9 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Load]
-@UserId bigint,
-@Id bigint = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
 as
 begin
 	set nocount on;
@@ -546,6 +790,52 @@ begin
 	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Tag, Memo,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Delete')
+	drop procedure a2demo.[Agent.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Message nvarchar(255) = N'корреспондента'
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	if exists(select 1 from a2demo.Documents d where @Id in (d.Agent, d.DepFrom, d.DepTo))
+	begin
+		declare @msg nvarchar(max);
+		set @msg = N'UI:Невозможно удалить ' + @Message + N'. Есть документы, в которых он используется.';
+		throw 60000, @msg, 0;
+	end
+	else
+	begin
+		update a2demo.Agents set Void=1 where Id=@Id;
+		-- todo: log
+	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Code.CheckDuplicate')
+	drop procedure a2demo.[Agent.Code.CheckDuplicate]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Code.CheckDuplicate]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint,
+	@Code nvarchar(255)
+as
+begin
+	set nocount on;
+	declare @valid bit = 1;
+	if exists(select * from a2demo.Agents where [Code] = @Code and Id <> @Id)
+		set @valid = 0;
+	select [Result!TResult!Object] = null, [Value] = @valid;
 end
 go
 ------------------------------------------------
@@ -563,9 +853,10 @@ end
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Update]
-@UserId bigint,
-@Agent a2demo.[Agent.TableType] readonly,
-@RetId bigint = null output
+	@TenantId int,
+	@UserId bigint,
+	@Agent a2demo.[Agent.TableType] readonly,
+	@RetId bigint = null output
 as
 begin
 	set nocount on;
@@ -596,7 +887,7 @@ begin
 	-- todo: log
 	select top(1) @RetId = id from @output;
 
-	exec a2demo.[Agent.Load] @UserId, @RetId;
+	exec a2demo.[Agent.Load] @TenantId, @UserId, @RetId;
 end
 go
 ------------------------------------------------
@@ -605,13 +896,14 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Index]
-@UserId bigint,
-@Kind nvarchar(255),
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc',
-@Fragment nvarchar(255) = null
+	@TenantId int,
+	@UserId bigint,
+	@Kind nvarchar(255),
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
@@ -660,19 +952,25 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Load]
-@UserId bigint,
-@Id bigint = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
 as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
 	select [Entity!TEntity!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Article, Tag, Memo,
 		[Unit!TUnit!RefId] = Unit,
-		DateCreated, DateModified
+		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified
 	from a2demo.Entities where Id=@Id and Void=0;
 
 	select [Units!TUnit!Array] = null, [Id!!Id] = Id, [Short!!Name] = Short, [Name]
 	from a2demo.Units;
+
+	select [!TUser!Map] = null, [Id!!Id] = u.Id,  [Name!!Name] = isnull(u.PersonName, u.UserName)
+	from a2security.ViewUsers u
+		inner join a2demo.Entities e on u.Id in (e.UserCreated, e.UserModified)
+	where e.Id=@Id;
 end
 go
 ------------------------------------------------
@@ -681,19 +979,66 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.FindArticle]
-@UserId bigint,
-@Article nvarchar(64) = null
+	@TenantId int,
+	@UserId bigint,
+	@Article nvarchar(64) = null
 as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, Tag, e.Memo,
+	select top(1) [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, Tag, e.Memo,
 		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.Short,
 		e.DateCreated, e.DateModified
 	from a2demo.Entities e 
 		left join a2demo.Units u  on e.Unit = u.Id
 	where Article=@Article and e.Void=0;
 
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Entity.Delete')
+	drop procedure a2demo.[Entity.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Entity.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Message nvarchar(255) = N'объект учета'
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	if exists(select 1 from a2demo.DocDetails dd where @Id in (dd.Entity))
+	begin
+		declare @msg nvarchar(max);
+		set @msg = N'UI:Невозможно удалить ' + @Message + N'. Есть документы, в которых он используется.';
+		throw 60000, @msg, 0;
+	end
+	else
+	begin
+		update a2demo.Entities set Void=1 where Id=@Id;
+		-- todo: log
+	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Entity.Article.CheckDuplicate')
+	drop procedure a2demo.[Entity.Article.CheckDuplicate]
+go
+------------------------------------------------
+create procedure a2demo.[Entity.Article.CheckDuplicate]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint,
+	@Article nvarchar(255)
+as
+begin
+	set nocount on;
+	declare @valid bit = 1;
+	if exists(select * from a2demo.Entities where [Article] = @Article and Id <> @Id)
+		set @valid = 0;
+	select [Result!TResult!Object] = null, [Value] = @valid;
 end
 go
 ------------------------------------------------
@@ -711,9 +1056,10 @@ end
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Update]
-@UserId bigint,
-@Entity a2demo.[Entity.TableType] readonly,
-@RetId bigint = null output
+	@TenantId int,
+	@UserId bigint,
+	@Entity a2demo.[Entity.TableType] readonly,
+	@RetId bigint = null output
 as
 begin
 	set nocount on;
@@ -745,7 +1091,7 @@ begin
 	-- todo: log
 	select top(1) @RetId = id from @output;
 
-	exec a2demo.[Entity.Load] @UserId, @RetId;
+	exec a2demo.[Entity.Load] @TenantId, @UserId, @RetId;
 end
 go
 ------------------------------------------------
@@ -754,15 +1100,16 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.Index]
-@UserId bigint,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc'
+	@TenantId int,
+	@UserId bigint,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @UserId=@UserId, @Kind=N'Invoice', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Invoice', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
 end
 go
 ------------------------------------------------
@@ -771,15 +1118,16 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Waybill.Index]
-@UserId bigint,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc'
+	@TenantId int,
+	@UserId bigint,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @UserId=@UserId, @Kind=N'Waybill', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Waybill', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
 end
 go
 ------------------------------------------------
@@ -788,15 +1136,16 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[WaybillIn.Index]
-@UserId bigint,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc'
+	@TenantId int,
+	@UserId bigint,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @UserId=@UserId, @Kind=N'WaybillIn', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'WaybillIn', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
 end
 go
 ------------------------------------------------
@@ -805,19 +1154,35 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Index]
-@UserId bigint,
-@Id bigint = null,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc',
-@Fragment nvarchar(255) = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Agent.Index] @UserId=@UserId, @Kind=N'Customer', 
+	exec a2demo.[Agent.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Customer', 
 	@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
 	@Fragment = @Fragment
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Delete')
+	drop procedure a2demo.[Customer.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Customer.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Agent.Delete] @TenantId, @UserId=@UserId, @Id=@Id, @Message=N'покупателя';
 end
 go
 ------------------------------------------------
@@ -826,19 +1191,35 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Supplier.Index]
-@UserId bigint,
-@Id bigint = null,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc',
-@Fragment nvarchar(255) = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Agent.Index] @UserId=@UserId, @Kind=N'Supplier', 
+	exec a2demo.[Agent.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Supplier', 
 	@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
 	@Fragment = @Fragment
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Supplier.Delete')
+	drop procedure a2demo.[Supplier.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Supplier.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Agent.Delete]  @TenantId, @UserId=@UserId, @Id=@Id, @Message=N'поставщика';
 end
 go
 ------------------------------------------------
@@ -847,19 +1228,35 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Goods.Index]
-@UserId bigint,
-@Id bigint = null,
-@Offset int = 0,
-@PageSize int = 20,
-@Order nvarchar(255) = N'Id',
-@Dir nvarchar(20) = N'desc',
-@Fragment nvarchar(255) = null
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Entity.Index] @UserId=@UserId, @Kind=N'Goods', 
+	exec a2demo.[Entity.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Goods', 
 		@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
 		@Fragment = @Fragment;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Goods.Delete')
+	drop procedure a2demo.[Goods.Delete]
+go
+------------------------------------------------
+create procedure a2demo.[Goods.Delete]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Entity.Delete]  @TenantId=@TenantId, @UserId=@UserId, @Id=@Id, @Message=N'товар';
 end
 go
 ------------------------------------------------
@@ -868,7 +1265,7 @@ begin
 	if not exists (select * from a2sys.SysParams where [Name] = N'AppTitle')
 		insert into a2sys.SysParams([Name], StringValue) values (N'AppTitle', N'A2:Demo'); 
 	if not exists (select * from a2sys.SysParams where [Name] = N'AppSubTitle')
-		insert into a2sys.SysParams([Name], StringValue) values (N'AppSubTitle', N'���������������� ����������'); 
+		insert into a2sys.SysParams([Name], StringValue) values (N'AppSubTitle', N'демонстрационное приложение'); 
 end
 go
 ------------------------------------------------
@@ -878,18 +1275,18 @@ begin
 	insert into @menu(id, p0, [name], [url], icon, [order])
 	values
 		(1, null, N'Default',     null,          null,     0),
-		(10, 1,   N'�������',     N'sales',	     null,     10),
-		(20, 1,   N'�������',     N'purchase',	 null,     20),
-		(31, 10,  N'���������',   null,		     null,     10),
-		(32, 10,  N'�����������', null,		     null,     20),
-		(33, 20,  N'���������',   null,		     null,     10),
-		(34, 20,  N'�����������', null,		     null,     20),
-		(41, 31,  N'�����',		  N'invoice',    N'file',  10),
-		(42, 31,  N'���������',	  N'waybill',    N'file',  20),
-		(43, 32,  N'����������',  N'customer',   N'user',  10),
-		(44, 33,  N'���������',	  N'waybillin',  N'file',  10),
-		(45, 34,  N'����������',  N'supplier',   N'user',  10),
-		(46, 34,  N'������',      N'goods',      N'steps', 20);
+		(10, 1,   N'Продажи',     N'sales',	     null,     10),
+		(20, 1,   N'Закупки',     N'purchase',	 null,     20),
+		(31, 10,  N'Документы',   null,		     null,     10),
+		(32, 10,  N'Справочники', null,		     null,     20),
+		(33, 20,  N'Документы',   null,		     null,     10),
+		(34, 20,  N'Справочники', null,		     null,     20),
+		(41, 31,  N'Счета',		  N'invoice',    N'file',  10),
+		(42, 31,  N'Накладные',	  N'waybill',    N'file',  20),
+		(43, 32,  N'Покупатели',  N'customer',   N'user',  10),
+		(44, 33,  N'Накладные',	  N'waybillin',  N'file',  10),
+		(45, 34,  N'Поставщики',  N'supplier',   N'user',  10),
+		(46, 34,  N'Товары',      N'goods',      N'steps', 20);
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200
@@ -918,11 +1315,11 @@ if not exists(select * from a2demo.Units)
 begin
 	insert into a2demo.Units(Short, [Name], UserCreated, UserModified)
 		values 
-		(N'��.', N'�����', 0, 0),
-		(N'��.', N'���������', 0, 0),
-		(N'�.', N'����', 0, 0),
-		(N'���.', N'�����', 0, 0),
-		(N'�.', N'����', 0, 0);
+		(N'шт.',  N'Штука', 0, 0),
+		(N'кг.',  N'Килограмм', 0, 0),
+		(N'л.',   N'Литр', 0, 0),
+		(N'пач.', N'Пачка', 0, 0),
+		(N'м.',   N'Метр', 0, 0);
 end
 go
 ------------------------------------------------
@@ -930,8 +1327,8 @@ if not exists(select * from a2demo.Agents where Kind=N'Warehouse')
 begin
 	insert into a2demo.Agents(Kind, [Name], UserCreated, UserModified)
 		values 
-		(N'Warehouse', N'�������� �����', 0, 0),
-		(N'Warehouse', N'����� ����������', 0, 0);
+		(N'Warehouse', N'Основной склад', 0, 0),
+		(N'Warehouse', N'Склад материалов', 0, 0);
 end
 go
 ------------------------------------------------
