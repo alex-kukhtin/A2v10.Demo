@@ -6,10 +6,9 @@ const du = utils.date;
 const template = {
     properties: {
         'TDocument.$Mark': mark,
-        'TDocument.$Icon'() { return this.Done ? 'success-green' : ''; },
-        "TDocument.$HasParent"() { return this.Parent.Id !== 0; },
-        "TDocument.$ParentName": parentName,
-        //"TParentDoc.$Name" - TODO: так не работает. Почему ???
+        'TDocument.$Icon'() { return this.Done ? 'flag-green' : ''; },
+        "TDocument.$HasParent"() { return this.ParentDoc.Id !== 0; },
+        "TDocParent.$Name": parentName
     },
 };
 
@@ -19,7 +18,7 @@ function mark() {
 }
 
 function parentName() {
-    const doc = this.Parent;
+    const doc = this;
     return `№ ${doc.No} от ${du.formatDate(doc.Date)}, ${utils.format(doc.Sum, 'Currency')} грн.`;
 }
 

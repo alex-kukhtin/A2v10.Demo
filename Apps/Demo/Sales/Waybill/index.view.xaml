@@ -38,8 +38,9 @@
                 <StackPanel Orientation="Horizontal">
                     <Label Margin="0,6,0,0">Основание:</Label>
                     <Hyperlink Icon="FileLink"
-                                    Command="{BindCmd Open, Url='/Sales/Invoice/Edit', Argument={Bind Parent}}"
-                                    Content="{Bind $ParentName}" />
+                                    Command="{BindCmd Open, Url='/Sales/Invoice/Edit', 
+                                    Argument={Bind ParentDoc}}"
+                                    Content="{Bind ParentDoc.$Name}" />
                 </StackPanel>
             </DataGridRowDetails>
         </DataGrid.RowDetails>

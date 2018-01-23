@@ -6,7 +6,7 @@ const du = utils.date;
 const template = {
     properties: {
         'TDocument.$Mark': mark,
-        'TDocument.$Icon'() { return this.Done ? 'success-green' : ''; },
+        'TDocument.$Icon'() { return this.Done ? 'flag-green' : ''; },
         'TDocument.$Shipment': getShipment,
         'TDocument.$HasDetails'() { return this.Links.Count > 0; },
         'TDocLink.$DocName': linkDocName

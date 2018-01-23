@@ -21,5 +21,11 @@
       "view": "editSupplier.dialog",
       "template": "editSupplier.template"
     }
+  },
+  "commands": {
+    "duplicateCode": {
+      "type": "sql",
+      "procedure": "Agent.Code.CheckDuplicate"
+    }
   }
 }
