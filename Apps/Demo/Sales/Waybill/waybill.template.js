@@ -10,7 +10,7 @@ const template = {
     properties: {
         'TRow.Sum': cmn.rowSum,
         'TDocument.Sum': cmn.docTotalSum,
-        'TDocument.$HasParent'() { return this.Parent.Id !== 0; },
+        'TDocument.$HasParent'() { return this.ParentDoc.Id !== 0; },
         'TDocParent.$Name': docParentName
     },
     validators: {
