@@ -3,7 +3,7 @@
       Title="{Bind Document.Id, Format='Счет [{0}]'}">
     <Page.Toolbar>
         <Toolbar>
-            <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">Сохранить</Button>
+            <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">@[Save]</Button>
             <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
             <Separator/>
@@ -11,7 +11,7 @@
             <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}}" If="{Bind Document.Done}"/>
             <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
-              Command="{BindCmd Close}">Закрыть</Button>
+              Command="{BindCmd Close}">@[Close]</Button>
         </Toolbar>
     </Page.Toolbar>
     <Page.Taskpad>
@@ -52,7 +52,7 @@
         <TextBox Grid.Row="3" Grid.ColSpan="3"
         Label="Покупатель" Value="{Bind Document.Agent.Name}" ValidateValue="{Bind Document.Agent}">
             <TextBox.AddOns>
-                <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+                <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Data={Bind Document.$CustomerKind}, Url='/Agent/BrowseCustomer'}"/>
             </TextBox.AddOns>
         </TextBox>
         <Block Grid.Row="4" Grid.ColSpan="4">
@@ -68,9 +68,9 @@
                         <TableCell>Артикул</TableCell>
                         <TableCell>Товар</TableCell>
                         <TableCell Wrap="NoWrap">Ед. изм.</TableCell>
-                        <TableCell>Количество</TableCell>
-                        <TableCell>Цена</TableCell>
-                        <TableCell>Сумма</TableCell>
+                        <TableCell>@[Qty]</TableCell>
+                        <TableCell>@[Price]</TableCell>
+                        <TableCell>@[Sum]</TableCell>
                         <TableCell/>
                     </TableRow>
                 </Table.Header>

@@ -6,7 +6,8 @@ const template = {
     properties: {
         'TRow.Sum': cmn.rowSum,
         'TDocument.Sum': cmn.docTotalSum,
-        'TDocument.$canShipment': canShipment
+        'TDocument.$canShipment': canShipment,
+        'TDocument.$CustomerKind'() { return { Kind: 'CUST' }; },
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',

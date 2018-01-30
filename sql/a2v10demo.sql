@@ -1156,6 +1156,7 @@ go
 create procedure a2demo.[Customer.Index]
 	@TenantId int,
 	@UserId bigint,
+	@Kind nvarchar(255) = null,
 	@Id bigint = null,
 	@Offset int = 0,
 	@PageSize int = 20,

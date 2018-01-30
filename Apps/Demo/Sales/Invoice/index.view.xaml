@@ -8,11 +8,11 @@
     </Page.Resources>
     <Page.Toolbar>
         <Toolbar>
-            <Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">Создать</Button>
+            <Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">@[Create]</Button>
             <Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
-            <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='Удалить документ?'}">Удалить</Button>
+            <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
             <Separator />
-            <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Button Icon="Reload" Command="{BindCmd Reload}">@[Refresh]</Button>
         </Toolbar>
     </Page.Toolbar>
     <Page.CollectionView>
@@ -25,12 +25,12 @@
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
                 MarkerStyle="Both" Mark="{Bind $Mark}">
-        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
-        <DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
-        <DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right"/>
-        <DataGridColumn Header="Покупатель" Content="{Bind Agent.Name}" />
-        <DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
-		<DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
+        <DataGridColumn Header="@[Code]" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
+        <DataGridColumn Header="@[Date]" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
+        <DataGridColumn Header="@[No]" Content="{Bind No}" Fit="True" Align="Right"/>
+        <DataGridColumn Header="@[Purchaser]" Content="{Bind Agent.Name}" />
+        <DataGridColumn Header="@[Sum]" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
+		<DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
         <!--
         <DataGridColumn Header="Создал/Изменил" Content="{Bind DateModified, DataType=DateTime}"/>
         -->
