@@ -1,0 +1,6 @@
+<!-- Invoice index -->
+<Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
+      Title="Not implemented">
+    <Header Size="Small" Align="Center" Margin="150">Yet not implemented</Header>
+</Page>
+

@@ -49,6 +49,7 @@
     <Content Include="Admin\Identity\User\password.template.js" />
     <Content Include="Demo\Agent\editSupplier.template.js" />
     <Content Include="Demo\Agent\editCustomer.template.js" />
+    <Content Include="Demo\Common\NotImplemented\notimplemented.template.js" />
     <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
     <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />
@@ -68,11 +69,13 @@
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
     <None Include="Demo\Agent\model.json" />
+    <None Include="Demo\Common\NotImplemented\model.json" />
     <None Include="Demo\Document\model.json" />
     <None Include="Demo\Entity\model.json" />
     <None Include="Demo\Purchase\Goods\model.json" />
     <None Include="Demo\Purchase\Supplier\model.json" />
     <None Include="Demo\Purchase\WaybillIn\model.json" />
+    <None Include="Demo\redirect.json" />
     <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
     <None Include="Demo\Sales\Waybill\model.json" />
@@ -175,6 +178,12 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Demo\Agent\browseSupplier.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Common\NotImplemented\notimplemented.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>

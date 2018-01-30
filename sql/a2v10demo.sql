@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 23 jan 2018 
-module version : 7008
+Last updated : 30 jan 2018 
+module version : 7009
 */
 ------------------------------------------------
 set noexec off;
@@ -21,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7008);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7009);
 else
-	update a2sys.Versions set [Version] = 7008 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7009 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -1258,6 +1258,21 @@ as
 begin
 	set nocount on;
 	exec a2demo.[Entity.Delete]  @TenantId=@TenantId, @UserId=@UserId, @Id=@Id, @Message=N'товар';
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Dummy.Index')
+	drop procedure a2demo.[Dummy.Index]
+go
+------------------------------------------------
+create procedure a2demo.[Dummy.Index]
+	@TenantId int,
+	@UserId bigint
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select [Dummy!TDummy!Object] = null;
 end
 go
 ------------------------------------------------

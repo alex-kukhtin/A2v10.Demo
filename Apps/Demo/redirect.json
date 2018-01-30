@@ -1,4 +1,5 @@
 ﻿{
+  "sales/waybill": "common/notimplemented"
   /*
   "sales/invoice": "common/notimplemented",
   "sales/waybill": "common/notimplemented",

@@ -1,0 +1,11 @@
+﻿{
+  "schema": "a2demo",
+  "model": "Dummy",
+  "actions": {
+    "index": {
+      "index": true,
+      "template": "notimplemented.template",
+      "view": "notimplemented.view"
+    }
+  }
+}
