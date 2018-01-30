@@ -18,8 +18,8 @@
             <ContentControl Content="{Source Path='../../Document/Info'}"/>
             <Panel Header="Основание" Icon="Link" If="{Bind Document.$HasParent}" Style="Warning" Padding="6">
                 <Hyperlink Icon="FileLink"
-                           Content="{Bind Document.Parent.$Name}"
-                           Command="{BindCmd Open, Url='/Sales/Invoice/Edit', Argument={Bind Document.Parent}}"/>
+                           Content="{Bind Document.ParentDoc.$Name}"
+                           Command="{BindCmd Open, Url='/Sales/Invoice/Edit', Argument={Bind Document.ParentDoc}}"/>
             </Panel>
         </Taskpad>
     </Page.Taskpad>

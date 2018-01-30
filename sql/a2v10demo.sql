@@ -422,7 +422,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Report]
-	@TenantId int,
+	@TenantId int = 0,
 	@UserId bigint,
 	@Id bigint = null
 as
