@@ -49,12 +49,12 @@
         <DatePicker Grid.Row="2" Label="Дата" Value="{Bind Document.Date}"/>
         <TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
         <Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
-        <TextBox Grid.Row="3" Grid.ColSpan="3"
-        Label="Покупатель" Value="{Bind Document.Agent.Name}" ValidateValue="{Bind Document.Agent}">
-            <TextBox.AddOns>
+        <Selector Grid.Row="3" Grid.ColSpan="3"
+            Label="Покупатель" Value="{Bind Document.Agent}" Delegate="fetchCustomers" DisplayProperty="Name">
+            <Selector.AddOns>
                 <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Data={Bind Document.$CustomerKind}, Url='/Agent/BrowseCustomer'}"/>
-            </TextBox.AddOns>
-        </TextBox>
+            </Selector.AddOns>
+        </Selector>
         <Block Grid.Row="4" Grid.ColSpan="4">
             <Toolbar Style="Transparent">
                 <Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>

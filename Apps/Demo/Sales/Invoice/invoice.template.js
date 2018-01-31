@@ -24,6 +24,9 @@ const template = {
         unApply: cmn.docUnApply,
         createShipment,
         createPayment
+    },
+    delegates: {
+        fetchCustomers
     }
 };
 
@@ -55,4 +58,9 @@ async function createPayment(doc) {
 
 function canShipment() {
     return this.Shipment.Count === 0;
+}
+
+function fetchCustomers(text) {
+    var vm = this.$vm;
+    return vm.$invoke('fetchCustomer', { Text: text, Kind: 'Customer' });
 }

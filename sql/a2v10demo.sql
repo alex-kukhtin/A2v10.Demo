@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 30 jan 2018 
-module version : 7009
+Last updated : 31 jan 2018 
+module version : 7010
 */
 ------------------------------------------------
 set noexec off;
@@ -21,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7009);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7010);
 else
-	update a2sys.Versions set [Version] = 7009 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7010 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -817,6 +817,32 @@ begin
 		update a2demo.Agents set Void=1 where Id=@Id;
 		-- todo: log
 	end
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Fetch')
+	drop procedure a2demo.[Agent.Fetch]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Fetch]
+	@TenantId int,
+	@UserId bigint,
+	@Kind nvarchar(255),
+	@Text nvarchar(255) = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+
+	if @Text is not null
+		set @Text = N'%' + upper(@Text) + N'%';
+
+	select [Agents!TAgent!Array]=null, [Id!!Id] = a.Id, [Name!!Name] = a.[Name], Code, a.Memo
+	from a2demo.Agents a
+		where a.Kind=@Kind and a.Void = 0
+			and (upper(a.[Name]) like @Text or upper(a.[Code]) like @Text
+			or upper(a.Memo) like @Text or cast(a.Id as nvarchar) like @Text)
+	order by a.[Name]
 end
 go
 ------------------------------------------------

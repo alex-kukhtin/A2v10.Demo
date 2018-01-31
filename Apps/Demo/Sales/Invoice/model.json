@@ -17,6 +17,10 @@
     "createShipment": {
       "type": "sql",
       "procedure": "Invoice.CreateShipment"
+    },
+    "fetchCustomer": {
+      "type": "sql",
+      "procedure": "Agent.Fetch"
     }
   },
   "reports": {
