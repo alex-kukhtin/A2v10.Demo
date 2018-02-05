@@ -5,36 +5,49 @@
       >
     <Page.Resources>
         <sys:String x:Key="OpenUrl">/Agent/EditCustomer</sys:String>
+        <sys:String x:Key="OpenFolderUrl">/Agent/EditFolder</sys:String>
     </Page.Resources>
-    <Page.Toolbar>
-        <Toolbar>
-            <Button Icon="Add" Tip="Создать покупателя" Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Создать</Button>
-            <Button Icon="Edit" Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Изменить</Button>
-            <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Agents}, Confirm='Удалить покупателя?'}">Удалить</Button>
-            <Separator />
-            <TextBox Label="Поиск:" Value="{Bind Parent.Filter.Fragment}" Placeholder="фрагмент имени или кода" Width="240">
-                <TextBox.AddOns>
-                    <Hyperlink Icon="Search" />
-                </TextBox.AddOns>
-            </TextBox>
-            <Separator />
-            <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
-        </Toolbar>
-    </Page.Toolbar>
     <Page.CollectionView>
         <CollectionView ItemsSource="{Bind Agents}" RunAt="ServerUrl" Filter="Fragment"/>
     </Page.CollectionView>
-    <Page.Pager>
-        <Pager Source="{Bind Parent.Pager}" />
-    </Page.Pager>
-    <DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
-				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
-                DoubleClick="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">
-        <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Dialog, Action=Edit, Url={StaticResource OpenUrl}, Argument={Bind}}"/>
-        <DataGridColumn Header="Наименование" Content="{Bind Name}"/>
-        <DataGridColumn Header="Код ЕДРПОУ" Content="{Bind Code}" Align="Right" Fit="True"/>
-        <DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
-	</DataGrid>
+    <Splitter>
+        <Block Splitter.Width="30%">
+            <Toolbar>
+                <Button Icon="Add" Tip="Создать папку" Command="{BindCmd Execute, CommandName=AddTopFolder, Argument={Bind Agents}}" />
+                <Button Icon="Edit" Command="{BindCmd Execute, CommandName=EditFolder, Argument={Bind Agents.$selected}}" />
+                <Button Icon="Delete" Command="{BindCmd Execute, CommandName=DeleteFolder, Argument={Bind Agents.$selected}, Confirm='Удалить папку?'}"/>
+            </Toolbar>
+            <TreeView AutoSelect="FirstItem" ExpandFirstItem="True"
+                      ItemsSource="{Bind Agents}" FolderSelect="True">
+                <TreeViewItem ItemsSource="{Bind SubItems}" Label="{Bind Name}" Icon="{Bind Icon}" />
+            </TreeView>
+        </Block>
+        <Block>
+            <Toolbar>
+                <Button Icon="Add" Content="@[Create]" Tip="Создать контрагента" 
+                        Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}"/>
+                <Button Icon="Edit" Content="@[Edit]"
+                        Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}" />
+                <Button Icon="Delete" Content="@[Delete]" Command="{BindCmd DbRemoveSelected, Argument={Bind Agents.Selected(Children)}, Confirm='Удалить покупателя?'}"/>
+                <Separator />
+                <TextBox Label="Поиск:" Value="{Bind Parent.Filter.Fragment}" Placeholder="фрагмент имени или кода" Width="240">
+                    <TextBox.AddOns>
+                        <Hyperlink Icon="Search" />
+                    </TextBox.AddOns>
+                </TextBox>
+                <Separator />
+                <Button Icon="Reload" Command="{BindCmd Reload, Argument={Bind Agents.Selected(Children)}}" Tip="Обновить данные">@[Reload]</Button>
+            </Toolbar>
+            <DataGrid Hover="True" HeadersVisibility="Column" ItemsSource="{Bind Agents.Selected(Children)}"
+			    Striped="True" Sort="False" GridLines="Vertical" FixedHeader="True"
+                DoubleClick="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}">
+                <DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Dialog, Action=Edit, Url={StaticResource OpenUrl}, Argument={Bind}}"/>
+                <DataGridColumn Header="@[Name]" Content="{Bind Name}"/>
+                <DataGridColumn Header="ЕДРПОУ" Content="{Bind Code}" Align="Right" Fit="True"/>
+                <DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
+            </DataGrid>
+        </Block>
+    </Splitter>
 </Page>
 
     

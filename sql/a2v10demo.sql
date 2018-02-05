@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 31 jan 2018 
-module version : 7010
+Last updated : 05 feb 2018 
+module version : 7011
 */
 ------------------------------------------------
 set noexec off;
@@ -21,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7010);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7011);
 else
-	update a2sys.Versions set [Version] = 7010 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7011 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -47,6 +47,8 @@ begin
 		Kind nvarchar(255) null,
 		Void bit not null
 			constraint DF_Agents_Void default(0),
+		Folder bit not null
+			constraint DF_Agents_Folder default(0),
 		Parent bigint null
 			constraint FK_Agents_Parent_Agents foreign key references a2demo.Agents(Id),
 		[Code] nvarchar(32) null,
@@ -60,6 +62,12 @@ begin
 		UserModified bigint not null
 			constraint FK_Agents_UserModified_Users foreign key references a2security.Users(Id)
 	);
+end
+go
+------------------------------------------------
+if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Agents' and COLUMN_NAME=N'Folder'))
+begin
+	alter table a2demo.Agents add Folder bit not null constraint DF_Agents_Folder default(0) with values;
 end
 go
 ------------------------------------------------
@@ -261,6 +269,8 @@ create type a2demo.[Agent.TableType]
 as table(
 	Id bigint null,
 	Kind nvarchar(255),
+	Folder bit,
+	ParentFolder bigint,
 	[Name] nvarchar(255),
 	Code nvarchar(32),
 	[Memo] nvarchar(255)
@@ -275,6 +285,7 @@ create type a2demo.[Entity.TableType]
 as table(
 	Id bigint null,
 	Kind nvarchar(255),
+	Folder bit,
 	[Name] nvarchar(255),
 	Article nvarchar(64),
 	[Memo] nvarchar(255),
@@ -787,7 +798,7 @@ as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Tag, Memo,
+	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Tag, Memo, Folder, ParentFolder=Parent,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
 end
@@ -814,7 +825,7 @@ begin
 	end
 	else
 	begin
-		update a2demo.Agents set Void=1 where Id=@Id;
+		update a2demo.Agents set Void=1, UserModified = @UserId, DateModified=getdate() where Id=@Id;
 		-- todo: log
 	end
 end
@@ -889,6 +900,11 @@ begin
 	set transaction isolation level read committed;
 	set xact_abort on;
 
+	/*
+	declare @xml nvarchar(max);
+	select @xml = (select * from @Agent for xml auto);
+	throw 60000, @xml, 0;
+	*/
 
 	declare @output table(op sysname, id bigint);
 
@@ -903,8 +919,8 @@ begin
 			target.[DateModified] = getdate(),
 			target.[UserModified] = @UserId
 	when not matched by target then 
-		insert (Kind, [Name], [Code], Memo, UserCreated, UserModified)
-		values (Kind, [Name], [Code], Memo, @UserId, @UserId)
+		insert (Kind, Folder, Parent, [Name], [Code], Memo, UserCreated, UserModified)
+		values (Kind, Folder, ParentFolder, [Name], [Code], Memo, @UserId, @UserId)
 	output 
 		$action op,
 		inserted.Id id
@@ -1182,19 +1198,73 @@ go
 create procedure a2demo.[Customer.Index]
 	@TenantId int,
 	@UserId bigint,
-	@Kind nvarchar(255) = null,
-	@Id bigint = null,
-	@Offset int = 0,
-	@PageSize int = 20,
-	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc',
 	@Fragment nvarchar(255) = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Agent.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Customer', 
-	@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
-	@Fragment = @Fragment
+	-- tree mode
+	select top(1) [Agents!TFolder!Tree] = null, [Id!!Id] = cast(-1 as bigint), [Name!!Name] = N'[Результат поиска]',
+		[Icon] = 'search',
+		[SubItems!TFolder!Items] = null,
+		[Children!TAgent!LazyArray] = null,
+		[HasSubItems!!HasChildren] = 0
+	from a2demo.Agents a where isnull(@Fragment, N'') <> N''
+	union all
+	select [Agents!TFolder!Tree] = null, [Id!!Id] = Id, [Name!!Name] = [Name],
+		[Icon] = 'folder',
+		[SubItems!TFolder!Items] = null,
+		[Children!TAgent!LazyArray] = null,
+		[HasSubItems!!HasChildren] = 
+			case when exists(select 1 from a2demo.Agents c where c.Void = 0 and c.Parent = a.Id and c.Folder = 1) then 1 else 0 end
+	from a2demo.Agents a where Kind=N'Customer' and Folder=1 and Parent is null and Void=0
+	order by [Id!!Id];
+
+	-- TAgent declaration (empty recordset)
+	select [!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo
+		from a2demo.Agents where 0 <> 0;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Expand')
+	drop procedure a2demo.[Customer.Expand]
+go
+------------------------------------------------
+create procedure a2demo.[Customer.Expand]
+	@TenantId int,
+	@UserId bigint,
+	@Fragment nvarchar(255) = null,
+	@Id bigint
+as
+begin
+	set nocount on;
+	select [SubItems!TFolder!Tree] = null, [Id!!Id] = Id, [Name!!Name] = [Name],
+		[Icon] = 'folder',
+		[SubItems!TFolder!Items] = null,
+		[Children!TAgent!LazyArray] = null,
+		[HasSubItems!!HasChildren] = case when exists(select 1 from a2demo.Agents c where c.Void=0 and c.Parent=a.Id and c.Folder = 1) then 1 else 0 end
+	from a2demo.Agents a where Kind=N'Customer' and Folder=1 and Parent = @Id and Void=0;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Children')
+	drop procedure a2demo.[Customer.Children]
+go
+------------------------------------------------
+create procedure a2demo.[Customer.Children]
+	@TenantId int,
+	@UserId bigint,
+	@Fragment nvarchar(255) = null,
+	@Id bigint
+as
+begin
+	set nocount on;
+	select [Children!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo
+		from a2demo.Agents
+	where Kind=N'Customer' and Folder=0 and Void=0 and (
+		Parent = @Id or
+			(@Id = -1 and upper([Name]) like N'%' + upper(@Fragment) + N'%')
+		)
+	order by Id desc;
 end
 go
 ------------------------------------------------

@@ -4,12 +4,13 @@
     <Page.Toolbar>
         <Toolbar>
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">@[Save]</Button>
-            <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" Command="{BindCmd SaveAndClose}">Сохранить и закрыть</Button>
-            <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" 
+                    Command="{BindCmd SaveAndClose}">@[SaveAndClose]</Button>
+            <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">@[Reload]</Button>
             <Separator/>
             <Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}}" If="{Bind !Document.Done}"/>
             <Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}}" If="{Bind Document.Done}"/>
-            <Button Icon="Print" Content="Печать" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
+            <Button Icon="Print" Content="@[Print]" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
             <Button Icon="Close" Toolbar.Align="Right"
               Command="{BindCmd Close}">@[Close]</Button>
         </Toolbar>
@@ -50,7 +51,7 @@
         <TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
         <Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
         <Selector Grid.Row="3" Grid.ColSpan="3"
-            Label="Покупатель" Value="{Bind Document.Agent}" Delegate="fetchCustomers" DisplayProperty="Name">
+            Label="@[Purchaser]" Value="{Bind Document.Agent}" Delegate="fetchCustomers" DisplayProperty="Name">
             <Selector.AddOns>
                 <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Data={Bind Document.$CustomerKind}, Url='/Agent/BrowseCustomer'}"/>
             </Selector.AddOns>
@@ -97,7 +98,7 @@
                 </TableRow>
             </Table>
         </Block>
-        <TextBox Grid.Row="6" Grid.ColSpan="4" Label="Примечание" Multiline="True"
+        <TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True"
              Value="{Bind Document.Memo}" Rows="3"/>
     </Grid>
 </Page>

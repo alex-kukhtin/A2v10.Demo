@@ -20,6 +20,11 @@
       "model": "Agent",
       "view": "editSupplier.dialog",
       "template": "editSupplier.template"
+    },
+    "editFolder": {
+      "model": "Agent",
+      "view": "editFolder.dialog",
+      "template": "editFolder.template"
     }
   },
   "commands": {

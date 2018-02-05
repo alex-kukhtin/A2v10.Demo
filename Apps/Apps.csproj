@@ -47,12 +47,15 @@
     <Content Include="Admin\Identity\User\edit.template.js" />
     <Content Include="Admin\Identity\User\index.template.js" />
     <Content Include="Admin\Identity\User\password.template.js" />
+    <Content Include="Demo\Agent\editFolder.template.js" />
     <Content Include="Demo\Agent\editSupplier.template.js" />
     <Content Include="Demo\Agent\editCustomer.template.js" />
     <Content Include="Demo\Common\NotImplemented\notimplemented.template.js" />
     <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
+    <Content Include="Demo\Localization\application.uk.txt" />
     <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />
+    <Content Include="Demo\Sales\Customer\index.template.js" />
     <Content Include="Demo\Sales\Invoice\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -184,6 +187,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Demo\Common\NotImplemented\notimplemented.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Agent\editFolder.dialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>
