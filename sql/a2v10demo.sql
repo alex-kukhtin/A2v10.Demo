@@ -1410,18 +1410,19 @@ begin
 	insert into @menu(id, p0, [name], [url], icon, [order])
 	values
 		(1, null, N'Default',     null,          null,     0),
-		(10, 1,   N'Продажи',     N'sales',	     null,     10),
-		(20, 1,   N'Закупки',     N'purchase',	 null,     20),
-		(31, 10,  N'Документы',   null,		     null,     10),
-		(32, 10,  N'Справочники', null,		     null,     20),
-		(33, 20,  N'Документы',   null,		     null,     10),
-		(34, 20,  N'Справочники', null,		     null,     20),
-		(41, 31,  N'Счета',		  N'invoice',    N'file',  10),
-		(42, 31,  N'Накладные',	  N'waybill',    N'file',  20),
-		(43, 32,  N'Покупатели',  N'customer',   N'user',  10),
-		(44, 33,  N'Накладные',	  N'waybillin',  N'file',  10),
-		(45, 34,  N'Поставщики',  N'supplier',   N'user',  10),
-		(46, 34,  N'Товары',      N'goods',      N'steps', 20);
+		(5, 1,    N'Панель',      N'dashboard',  null,     5),
+		(10, 1,   N'Продажи',     N'sales',      null,    10),
+		(20, 1,   N'Закупки',     N'purchase',   null,    20),
+		(31, 10,  N'Документы',   null,		     null,    10),
+		(32, 10,  N'Справочники', null,		     null,    20),
+		(33, 20,  N'Документы',   null,		     null,    10),
+		(34, 20,  N'Справочники', null,		     null,    20),
+		(41, 31,  N'Счета',		  N'invoice',    N'file', 10),
+		(42, 31,  N'Накладные',	  N'waybill',    N'file', 20),
+		(43, 32,  N'Покупатели',  N'customer',   N'user', 10),
+		(44, 33,  N'Накладные',	  N'waybillin',  N'file', 10),
+		(45, 34,  N'Поставщики',  N'supplier',   N'user', 10),
+		(46, 34,  N'Товары',      N'goods',      N'steps',20);
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200

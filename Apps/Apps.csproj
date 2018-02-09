@@ -51,6 +51,7 @@
     <Content Include="Demo\Agent\editSupplier.template.js" />
     <Content Include="Demo\Agent\editCustomer.template.js" />
     <Content Include="Demo\Common\NotImplemented\notimplemented.template.js" />
+    <Content Include="Demo\Dashboard\dashboard.template.js" />
     <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
     <Content Include="Demo\Localization\application.uk.txt" />
@@ -74,6 +75,7 @@
     <None Include="Admin\Identity\User\model.json" />
     <None Include="Demo\Agent\model.json" />
     <None Include="Demo\Common\NotImplemented\model.json" />
+    <None Include="Demo\Dashboard\model.json" />
     <None Include="Demo\Document\model.json" />
     <None Include="Demo\Entity\model.json" />
     <None Include="Demo\Purchase\Goods\model.json" />
@@ -194,6 +196,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Demo\Agent\editFolder.dialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Dashboard\dashboard.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>
