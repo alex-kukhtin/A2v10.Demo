@@ -53,7 +53,7 @@
         <Selector Grid.Row="3" Grid.ColSpan="3"
             Label="@[Purchaser]" Value="{Bind Document.Agent}" Delegate="fetchCustomers" DisplayProperty="Name">
             <Selector.AddOns>
-                <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Data={Bind Document.$CustomerKind}, Url='/Agent/BrowseCustomer'}"/>
+                <Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
             </Selector.AddOns>
         </Selector>
         <Block Grid.Row="4" Grid.ColSpan="4">
@@ -98,7 +98,7 @@
                 </TableRow>
             </Table>
         </Block>
-        <TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True"
+        <TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True" AutoSize="True"
              Value="{Bind Document.Memo}" Rows="3"/>
     </Grid>
 </Page>

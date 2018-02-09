@@ -6,8 +6,7 @@ const template = {
     properties: {
         'TRow.Sum': cmn.rowSum,
         'TDocument.Sum': cmn.docTotalSum,
-        'TDocument.$canShipment': canShipment,
-        'TDocument.$CustomerKind'() { return { Kind: 'CUST' }; },
+        'TDocument.$canShipment': canShipment
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',
@@ -60,7 +59,7 @@ function canShipment() {
     return this.Shipment.Count === 0;
 }
 
-function fetchCustomers(text) {
+function fetchCustomers(agent, text) {
     var vm = this.$vm;
     return vm.$invoke('fetchCustomer', { Text: text, Kind: 'Customer' });
 }

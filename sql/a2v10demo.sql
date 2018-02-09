@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 05 feb 2018 
-module version : 7011
+Last updated : 09 feb 2018 
+module version : 7012
 */
 ------------------------------------------------
 set noexec off;
@@ -773,7 +773,7 @@ begin
 				case when @Order=N'Memo' and @Dir = @Desc then a.Memo end desc
 			)
 		from a2demo.Agents a
-		where a.Kind=@Kind and a.Void = 0
+		where a.Kind=@Kind and a.Void = 0 and Folder = 0
 		and (@Fragment is null or upper(a.[Name]) like @Fragment or upper(a.[Code]) like @Fragment
 			or upper(a.Memo) like @Fragment or cast(a.Id as nvarchar) like @Fragment)
 	)
@@ -850,7 +850,7 @@ begin
 
 	select [Agents!TAgent!Array]=null, [Id!!Id] = a.Id, [Name!!Name] = a.[Name], Code, a.Memo
 	from a2demo.Agents a
-		where a.Kind=@Kind and a.Void = 0
+		where a.Kind=@Kind and a.Void = 0 and Folder = 0
 			and (upper(a.[Name]) like @Text or upper(a.[Code]) like @Text
 			or upper(a.Memo) like @Text or cast(a.Id as nvarchar) like @Text)
 	order by a.[Name]
@@ -1198,7 +1198,8 @@ go
 create procedure a2demo.[Customer.Index]
 	@TenantId int,
 	@UserId bigint,
-	@Fragment nvarchar(255) = null
+	@Fragment nvarchar(255) = null,
+	@Id bigint = null
 as
 begin
 	set nocount on;
@@ -1280,6 +1281,28 @@ as
 begin
 	set nocount on;
 	exec a2demo.[Agent.Delete] @TenantId, @UserId=@UserId, @Id=@Id, @Message=N'покупателя';
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Browse.Index')
+	drop procedure a2demo.[Customer.Browse.Index]
+go
+------------------------------------------------
+create procedure a2demo.[Customer.Browse.Index]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Fragment nvarchar(255) = null
+as
+begin
+	set nocount on;
+	exec a2demo.[Agent.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Customer', 
+	@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
+	@Fragment = @Fragment
 end
 go
 ------------------------------------------------

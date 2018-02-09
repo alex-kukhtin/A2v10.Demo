@@ -3,7 +3,7 @@
   "dialogs": {
     "browseCustomer": {
       "index": true,
-      "model": "Customer",
+      "model": "Customer.Browse",
       "view": "browseCustomer.dialog"
     },
     "browseSupplier": {

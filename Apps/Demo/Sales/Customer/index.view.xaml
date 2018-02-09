@@ -26,9 +26,8 @@
             <Toolbar>
                 <Button Icon="Add" Content="@[Create]" Tip="Создать контрагента" 
                         Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}"/>
-                <Button Icon="Edit" Content="@[Edit]"
-                        Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}" />
-                <Button Icon="Delete" Content="@[Delete]" Command="{BindCmd DbRemoveSelected, Argument={Bind Agents.Selected(Children)}, Confirm='Удалить покупателя?'}"/>
+                <Button Icon="Edit" Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}" />
+                <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Agents.Selected(Children)}, Confirm='Удалить покупателя?'}"/>
                 <Separator />
                 <TextBox Label="Поиск:" Value="{Bind Parent.Filter.Fragment}" Placeholder="фрагмент имени или кода" Width="240">
                     <TextBox.AddOns>
@@ -36,7 +35,7 @@
                     </TextBox.AddOns>
                 </TextBox>
                 <Separator />
-                <Button Icon="Reload" Command="{BindCmd Reload, Argument={Bind Agents.Selected(Children)}}" Tip="Обновить данные">@[Reload]</Button>
+                <Button Icon="Reload" Command="{BindCmd Reload, Argument={Bind Agents.Selected(Children)}}" Tip="Обновить данные"/>
             </Toolbar>
             <DataGrid Hover="True" HeadersVisibility="Column" ItemsSource="{Bind Agents.Selected(Children)}"
 			    Striped="True" Sort="False" GridLines="Vertical" FixedHeader="True"

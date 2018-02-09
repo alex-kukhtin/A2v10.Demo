@@ -13,6 +13,18 @@
             <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='Удалить документ?'}">Удалить</Button>
             <Separator />
             <Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">Обновить</Button>
+            <Button Icon="Menu" Toolbar.Align="Right" Tip="Действия">
+                <Button.DropDown>
+                    <DropDownMenu Direction="DownRight">
+                        <MenuItem Icon="Add" Content="Создать"/>
+                        <MenuItem Icon="Edit" Content="Изменить"/>
+                        <Separator />
+                        <MenuItem Icon="Copy" Content="Копировать"/>
+                        <Separator />
+                        <MenuItem Icon="Edit" Content="Удалить"/>
+                    </DropDownMenu>
+                </Button.DropDown>
+            </Button>
         </Toolbar>
     </Page.Toolbar>
     <Page.CollectionView>
@@ -21,6 +33,14 @@
     <Page.Pager>
         <Pager Source="{Bind Parent.Pager}" />
     </Page.Pager>
+    <!--
+    <Grid Columns="MinMax(50vh; 1*), 1*">
+        <Graphics Delegate="DrawSine"/>
+        <Panel Grid.Col="2" Header="Panel" Grid.VAlign="Top" Collapsible="True">
+            <Graphics Delegate="DrawSine"/>
+        </Panel>
+    </Grid>
+    -->
     <DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">
