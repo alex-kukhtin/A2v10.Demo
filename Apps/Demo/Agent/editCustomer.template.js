@@ -24,6 +24,7 @@ function modelLoad(root, caller) {
 
 function customerCreate(ag, parentId) {
     ag.Kind = 'Customer';
+    ag.Type = 'C';
     ag.ParentFolder = parentId;
 }
 

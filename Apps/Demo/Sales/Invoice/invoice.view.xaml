@@ -1,6 +1,6 @@
 <!-- Invoice index -->
 <Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
-      Title="{Bind Document.Id, Format='Счет [{0}]'}">
+      Title="{Bind Document.Id, Format='@[Reload] [{0}]'}">
     <Page.Toolbar>
         <Toolbar>
             <Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">@[Save]</Button>

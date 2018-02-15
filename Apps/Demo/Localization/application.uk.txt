@@ -1,1 +1,3 @@
 ﻿;
+@Sure.ApplyDocument=Провести документ?
+@Sure.UnApplyDocument=Скасувати проведення документа?

@@ -51,6 +51,7 @@ begin
 			constraint DF_Agents_Folder default(0),
 		Parent bigint null
 			constraint FK_Agents_Parent_Agents foreign key references a2demo.Agents(Id),
+		[Type] nchar(1),
 		[Code] nvarchar(32) null,
 		[Name] nvarchar(255) null,
 		[Tag] nvarchar(255) null,
@@ -68,6 +69,12 @@ go
 if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Agents' and COLUMN_NAME=N'Folder'))
 begin
 	alter table a2demo.Agents add Folder bit not null constraint DF_Agents_Folder default(0) with values;
+end
+go
+------------------------------------------------
+if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Agents' and COLUMN_NAME=N'Type'))
+begin
+	alter table a2demo.Agents add [Type] nchar(1);
 end
 go
 ------------------------------------------------
@@ -270,6 +277,7 @@ as table(
 	Id bigint null,
 	Kind nvarchar(255),
 	Folder bit,
+	[Type] nchar(1),
 	ParentFolder bigint,
 	[Name] nvarchar(255),
 	Code nvarchar(32),
@@ -374,10 +382,12 @@ go
 create procedure a2demo.[Document.Load]
 	@TenantId int,
 	@UserId bigint,
-	@Id bigint = null
+	@Id bigint = null,
+	@Kind nvarchar(255) = null
 as
 begin
 	set nocount on;
+
 	select [Document!TDocument!Object] = null, [Id!!Id] = d.Id, Kind, [Date], [No], [Sum], Tag, d.Memo,
 		[Agent!TAgent!RefId] = Agent, [DepFrom!TAgent!RefId] = DepFrom, [DepTo!TAgent!RefId] = DepTo,
 		Done,
@@ -676,6 +686,7 @@ go
 create procedure a2demo.[Document.Update]
 	@TenantId int,
 	@UserId bigint,
+	@Kind nvarchar(255) = null,
 	@Document a2demo.[Document.TableType] readonly,
 	@Rows a2demo.[DocDetails.TableType] readonly,
 	@RetId bigint = null output
@@ -684,7 +695,6 @@ begin
 	set nocount on;
 	set transaction isolation level read committed;
 	set xact_abort on;
-
 
 	declare @output table(op sysname, id bigint);
 
@@ -798,7 +808,8 @@ as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Tag, Memo, Folder, ParentFolder=Parent,
+	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Type], 
+		Code, Tag, Memo, Folder, ParentFolder=Parent,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
 end
@@ -916,11 +927,12 @@ begin
 			target.[Name] = source.[Name],
 			target.[Code] = source.[Code],
 			target.[Memo] = source.Memo,
+			target.[Type] = source.[Type],
 			target.[DateModified] = getdate(),
 			target.[UserModified] = @UserId
 	when not matched by target then 
-		insert (Kind, Folder, Parent, [Name], [Code], Memo, UserCreated, UserModified)
-		values (Kind, Folder, ParentFolder, [Name], [Code], Memo, @UserId, @UserId)
+		insert (Kind, Folder, Parent, [Name], [Code], [Type], Memo, UserCreated, UserModified)
+		values (Kind, Folder, ParentFolder, [Name], [Code], [Type], Memo, @UserId, @UserId)
 	output 
 		$action op,
 		inserted.Id id

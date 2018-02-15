@@ -9,7 +9,9 @@ const template = {
         'TDocument.$Icon'() { return this.Done ? 'flag-green' : ''; },
         'TDocument.$Shipment': getShipment,
         'TDocument.$HasDetails'() { return this.Links.Count > 0; },
-        'TDocLink.$DocName': linkDocName
+        'TDocLink.$DocName': linkDocName,
+        "TDocument.$State"() { return this.Done ? 'Проведен' : ''; },
+        "TDocument.$StateStyle"() { return this.Done ? 'info' : 'hidden'; }
     },
 };
 

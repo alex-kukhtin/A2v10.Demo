@@ -9,6 +9,10 @@
     },
     "edit": {
       "model": "Document",
+      /*
+      "parameters": {
+        "Kind": "TEST"
+      },*/
       "view": "invoice.view",
       "template": "invoice.template"
     }

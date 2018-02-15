@@ -15,11 +15,11 @@ module.exports = {
     docApply: {
         saveRequired: true,
         validRequired: true,
-        confirm: 'Провести документ?',
+        confirm: '@[Sure.ApplyDocument]',
         exec: applyDocument
     },
     docUnApply: {
-        confirm: 'Отменить проведение документа?',
+        confirm: '@[Sure.UnApplyDocument]',
         exec: unApplyDocument
     },
 };

@@ -10,7 +10,7 @@
             <Grid Columns="1*, 1*">
                 <TextBox Grid.Row="1" Grid.ColSpan="2" Label="Наименование" TabIndex="1"
                          Value="{Bind Agent.Name}"/>
-                <TextBox Grid.Row="5" Grid.ColSpan="2" Label="Примечание" Value="{Bind Agent.Memo}" Rows="3" Multiline="True"/>
+                <TextBox Grid.Row="5" Grid.ColSpan="2" Label="Примечание" Value="{Bind Agent.Memo}" Rows="3" Multiline="True" TabIndex="2"/>
             </Grid>
         </Tab>    
     </TabPanel>

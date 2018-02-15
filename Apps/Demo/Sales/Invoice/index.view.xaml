@@ -25,6 +25,10 @@
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
                 MarkerStyle="Both" Mark="{Bind $Mark}">
+        <DataGridColumn Fit="True">
+            <TagLabel Content="{Bind $State}" Style="{Bind $StateStyle}"/>
+        </DataGridColumn>
+            
         <DataGridColumn Header="@[Code]" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
         <DataGridColumn Header="@[Date]" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
         <DataGridColumn Header="@[No]" Content="{Bind No}" Fit="True" Align="Right"/>
