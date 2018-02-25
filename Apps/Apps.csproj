@@ -82,6 +82,7 @@
     <None Include="Demo\Purchase\Supplier\model.json" />
     <None Include="Demo\Purchase\WaybillIn\model.json" />
     <None Include="Demo\redirect.json" />
+    <None Include="Demo\Reports\model.json" />
     <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
     <None Include="Demo\Sales\Waybill\model.json" />
@@ -202,6 +203,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Demo\Dashboard\dashboard.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Reports\invoice.registry.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>

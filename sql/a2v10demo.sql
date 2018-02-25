@@ -421,7 +421,7 @@ begin
 	where dd.Document = @Id;
 
 	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Shipment!ParentId] = Parent,
-		[No], [Date], [Sum]
+		[No], [Date], [Sum], [Done]
 	from a2demo.Documents where Parent = @Id
 	order by Id;
 
@@ -1203,6 +1203,41 @@ begin
 end
 go
 ------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Index.Dynamic')
+	drop procedure a2demo.[Customer.Index.Dynamic]
+go
+------------------------------------------------
+create procedure a2demo.[Customer.Index.Dynamic]
+	@TenantId int,
+	@UserId bigint,
+	@Fragment nvarchar(255) = null,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+
+	select top(1) [Agents!TFolder!Tree] = null, [Id!!Id] = cast(-1 as bigint), [Name!!Name] = N'[Результат поиска]',
+		[Icon] = 'search',
+		[SubItems!TFolder!Items] = null,
+		[Children!TAgent!LazyArray] = null,
+		[HasSubItems!!HasChildren] = 0
+	from a2demo.Agents a where isnull(@Fragment, N'') <> N''
+	union all
+	select [Agents!TFolder!Tree] = null, [Id!!Id] = a.Id, [Name!!Name] = a.[Name],
+		[Icon] = 'folder',
+		[SubItems!TFolder!Items] = null,
+		[Children!TAgent!LazyArray] = null,
+		[HasSubItems!!HasChildren] = 
+			case when exists(select 1 from a2demo.Agents c where c.Void = 0 and c.Parent = a.Id and c.Folder = 1) then 1 else 0 end
+	from a2demo.Agents a where a.Folder=1 and a.Parent is null and a.Void = 0
+	order by [Id!!Id];
+
+	-- TAgent declaration (empty recordset)
+	select [!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo
+		from a2demo.Agents where 0 <> 0;
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Customer.Index')
 	drop procedure a2demo.[Customer.Index]
 go
@@ -1215,22 +1250,30 @@ create procedure a2demo.[Customer.Index]
 as
 begin
 	set nocount on;
-	-- tree mode
-	select top(1) [Agents!TFolder!Tree] = null, [Id!!Id] = cast(-1 as bigint), [Name!!Name] = N'[Результат поиска]',
+
+	-- static tree mode - load all tree items
+	with X(Id, Parent, [Level])
+	as (
+		select Id, Parent, 0 from a2demo.Agents a where a.Kind=N'Customer' and a.Void=0 and a.Parent is null and a.Folder=1
+		union all 
+		select a.Id, a.Parent, X.[Level] + 1 from a2demo.Agents a
+			inner join X on X.Id = a.Parent
+		where a.Void=0 and a.Folder=1
+	)
+	select top(1) [Agents!TFolder!Tree] = null, [Id!!Id] = cast(-1 as bigint), [!TFolder.SubItems!ParentId]=null, [Name!!Name] = N'[Результат поиска]',
 		[Icon] = 'search',
 		[SubItems!TFolder!Items] = null,
 		[Children!TAgent!LazyArray] = null,
-		[HasSubItems!!HasChildren] = 0
+		[Level] = -1
 	from a2demo.Agents a where isnull(@Fragment, N'') <> N''
 	union all
-	select [Agents!TFolder!Tree] = null, [Id!!Id] = Id, [Name!!Name] = [Name],
+	select [Agents!TFolder!Tree] = null, [Id!!Id] = a.Id, [!TFolder.SubItems!ParentId]=X.Parent,  [Name!!Name] = a.[Name],
 		[Icon] = 'folder',
 		[SubItems!TFolder!Items] = null,
 		[Children!TAgent!LazyArray] = null,
-		[HasSubItems!!HasChildren] = 
-			case when exists(select 1 from a2demo.Agents c where c.Void = 0 and c.Parent = a.Id and c.Folder = 1) then 1 else 0 end
-	from a2demo.Agents a where Kind=N'Customer' and Folder=1 and Parent is null and Void=0
-	order by [Id!!Id];
+		[Level] = X.[Level]
+	from a2demo.Agents a inner join X on  a.Id = X.Id
+	order by [Level], [Id!!Id];
 
 	-- TAgent declaration (empty recordset)
 	select [!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo
@@ -1389,6 +1432,23 @@ as
 begin
 	set nocount on;
 	exec a2demo.[Entity.Delete]  @TenantId=@TenantId, @UserId=@UserId, @Id=@Id, @Message=N'товар';
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Invoice.Registry.Load')
+	drop procedure a2demo.[Invoice.Registry.Load]
+go
+------------------------------------------------
+create procedure a2demo.[Invoice.Registry.Load]
+	@TenantId int,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	select [ReportData!TData!Array] = null, [Id!!Id] = Id, [Date], [No], [Sum], [Memo], DateCreated, DateModified
+	from a2demo.Documents where Kind=N'Invoice' and Agent=@Id
+	order by [Date] desc;
 end
 go
 ------------------------------------------------

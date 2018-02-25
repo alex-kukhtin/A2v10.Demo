@@ -6,7 +6,8 @@ const template = {
     properties: {
         'TRow.Sum': cmn.rowSum,
         'TDocument.Sum': cmn.docTotalSum,
-        'TDocument.$canShipment': canShipment
+        'TDocument.$canShipment': canShipment,
+        'TDocLink.$Mark'() {return this.Done ? 'success' : null;} 
     },
     validators: {
         'Document.Agent': 'Выберите покупателя',

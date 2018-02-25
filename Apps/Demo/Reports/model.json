@@ -1,0 +1,9 @@
+﻿{
+	"schema": "a2demo",
+	"actions": {
+		"invoiceRegistry": {
+			"model": "Invoice.Registry",
+			"view": "invoice.registry.view"
+		}
+	}
+}

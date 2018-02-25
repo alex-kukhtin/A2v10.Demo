@@ -3,56 +3,54 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:sys="clr-namespace:System;assembly=mscorlib"
       >
-    <Page.Resources>
-        <sys:String x:Key="OpenUrl">/Sales/Invoice/Edit</sys:String>
-    </Page.Resources>
-    <Page.Toolbar>
-        <Toolbar>
-            <Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">@[Create]</Button>
-            <Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
-            <Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
-            <Separator />
-            <Button Icon="Reload" Command="{BindCmd Reload}">@[Refresh]</Button>
-        </Toolbar>
-    </Page.Toolbar>
-    <Page.CollectionView>
-        <CollectionView ItemsSource="{Bind Documents}" RunAt="ServerUrl"/>
-    </Page.CollectionView>
-    <Page.Pager>
-        <Pager Source="{Bind Parent.Pager}" />
-    </Page.Pager>
-    <DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
+	<Page.Resources>
+		<sys:String x:Key="OpenUrl">/Sales/Invoice/Edit</sys:String>
+	</Page.Resources>
+	<Page.Toolbar>
+		<Toolbar>
+			<Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">@[Create]</Button>
+			<Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
+			<Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
+			<Separator />
+			<Button Icon="Reload" Command="{BindCmd Reload}">@[Refresh]</Button>
+		</Toolbar>
+	</Page.Toolbar>
+	<Page.CollectionView>
+		<CollectionView ItemsSource="{Bind Documents}" RunAt="ServerUrl"/>
+	</Page.CollectionView>
+	<Page.Pager>
+		<Pager Source="{Bind Parent.Pager}" />
+	</Page.Pager>
+	<DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
                 DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
                 MarkerStyle="Both" Mark="{Bind $Mark}">
-        <DataGridColumn Fit="True">
-            <TagLabel Content="{Bind $State}" Style="{Bind $StateStyle}"/>
-        </DataGridColumn>
-            
-        <DataGridColumn Header="@[Code]" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
-        <DataGridColumn Header="@[Date]" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
-        <DataGridColumn Header="@[No]" Content="{Bind No}" Fit="True" Align="Right"/>
-        <DataGridColumn Header="@[Purchaser]" Content="{Bind Agent.Name}" />
-        <DataGridColumn Header="@[Sum]" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
+		<DataGridColumn Fit="True">
+			<TagLabel Content="{Bind $State}" Style="{Bind $StateStyle}"/>
+		</DataGridColumn>
+
+		<DataGridColumn Header="@[Code]" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Open, Url={StaticResource OpenUrl}}"  Icon="{Bind $Icon}" Wrap="NoWrap"/>
+		<DataGridColumn Header="@[Date]" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
+		<DataGridColumn Header="@[No]" Content="{Bind No}" Fit="True" Align="Right"/>
+		<DataGridColumn Header="@[Purchaser]" Content="{Bind Agent.Name}" />
+		<DataGridColumn Header="@[Sum]" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
 		<DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
-        <!--
+		<!--
         <DataGridColumn Header="Создал/Изменил" Content="{Bind DateModified, DataType=DateTime}"/>
         -->
-        <DataGrid.RowDetails>
-            <DataGridRowDetails Visible="{Bind $HasDetails}" Activate="Cell">
-                <StackPanel Orientation="Horizontal">
-                    <Label Margin="0,6,0,0">Отгрузки:</Label>
-                    <StackPanel Orientation="Vertical">
-                        <Repeater ItemsSource="{Bind $Shipment}">
-                            <Hyperlink Icon="FileLink" 
+		<DataGrid.RowDetails>
+			<DataGridRowDetails Visible="{Bind $HasDetails}" Activate="Cell">
+				<StackPanel Orientation="Horizontal">
+					<Label Margin="0,6,0,0">Отгрузки:</Label>
+					<StackPanel Orientation="Vertical">
+						<Repeater ItemsSource="{Bind $Shipment}">
+							<Hyperlink Icon="FileLink" 
                                        Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"
                                        Content="{Bind $DocName}" />
-                        </Repeater>
-                    </StackPanel>
-                </StackPanel>
-            </DataGridRowDetails>
-        </DataGrid.RowDetails>
-    </DataGrid>
+						</Repeater>
+					</StackPanel>
+				</StackPanel>
+			</DataGridRowDetails>
+		</DataGrid.RowDetails>
+	</DataGrid>
 </Page>
-
-    
