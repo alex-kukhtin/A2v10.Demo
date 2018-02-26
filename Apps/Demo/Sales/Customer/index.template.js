@@ -6,7 +6,8 @@ const template = {
 		"TRoot.$SelectedItem"() {
 			let x = this.Agents.Selected('Children');
 			return x ? x.$selected : null;
-		}
+		},
+		"TAgent.$EditUrl"() { return '/Agent/EditCustomer';}
 	},
 	commands: {
 		'AddFolder': {

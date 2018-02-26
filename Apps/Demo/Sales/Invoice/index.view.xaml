@@ -1,8 +1,7 @@
 <!-- Invoice index -->
 <Page xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:sys="clr-namespace:System;assembly=mscorlib"
-      >
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:sys="clr-namespace:System;assembly=mscorlib">
 	<Page.Resources>
 		<sys:String x:Key="OpenUrl">/Sales/Invoice/Edit</sys:String>
 	</Page.Resources>
@@ -13,6 +12,13 @@
 			<Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
 			<Separator />
 			<Button Icon="Reload" Command="{BindCmd Reload}">@[Refresh]</Button>
+			<Button Icon="Menu">
+				<Button.DropDown>
+					<DropDownMenu>
+						<MenuItem Content="First element"></MenuItem>
+					</DropDownMenu>
+				</Button.DropDown>
+			</Button>
 		</Toolbar>
 	</Page.Toolbar>
 	<Page.CollectionView>
@@ -23,8 +29,8 @@
 	</Page.Pager>
 	<DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
-                DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
-                MarkerStyle="Both" Mark="{Bind $Mark}">
+				DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
+				MarkerStyle="Both" Mark="{Bind $Mark}">
 		<DataGridColumn Fit="True">
 			<TagLabel Content="{Bind $State}" Style="{Bind $StateStyle}"/>
 		</DataGridColumn>
@@ -45,8 +51,8 @@
 					<StackPanel Orientation="Vertical">
 						<Repeater ItemsSource="{Bind $Shipment}">
 							<Hyperlink Icon="FileLink" 
-                                       Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"
-                                       Content="{Bind $DocName}" />
+								Command="{BindCmd Open, Url='/Sales/Waybill/Edit', Argument={Bind}}"
+								Content="{Bind $DocName}" />
 						</Repeater>
 					</StackPanel>
 				</StackPanel>

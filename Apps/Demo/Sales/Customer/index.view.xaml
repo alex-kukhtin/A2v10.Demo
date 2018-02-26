@@ -45,14 +45,19 @@
 					</Button.DropDown>
 				</Button>
 			</Toolbar>
-			<DataGrid Hover="True" HeadersVisibility="Column" ItemsSource="{Bind Agents.Selected(Children)}"
-					Striped="True" Sort="False" GridLines="Vertical" FixedHeader="True"
-					DoubleClick="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}">
-				<DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Dialog, Action=Edit, Url={StaticResource OpenUrl}, Argument={Bind}}"/>
-				<DataGridColumn Header="@[Name]" Content="{Bind Name}"/>
-				<DataGridColumn Header="ЕДРПОУ" Content="{Bind Code}" Align="Right" Fit="True"/>
-				<DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
-			</DataGrid>
+			<CollectionView ItemsSource="{Bind Agents.Selected(Children)}" 
+								RunAt="Server" PageSize="20">
+				<DataGrid Hover="True" HeadersVisibility="Column" ItemsSource="{Bind Parent.ItemsSource}"
+						Striped="True" Sort="True" GridLines="Vertical" FixedHeader="False"
+						DoubleClick="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}">
+					<DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Command="{BindCmd Dialog, 
+						Action=Edit, Url={Bind $EditUrl}, Argument={Bind}}"/>
+					<DataGridColumn Header="@[Name]" Content="{Bind Name}"/>
+					<DataGridColumn Header="ЕДРПОУ" Content="{Bind Code}" Align="Right" Fit="True"/>
+					<DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
+				</DataGrid>
+				<Pager Source="{Bind Parent.Pager}"/>
+			</CollectionView>
 		</Block>
 	</Splitter>
 </Page>

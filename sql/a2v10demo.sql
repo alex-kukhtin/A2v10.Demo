@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 09 feb 2018 
-module version : 7012
+Last updated : 26 feb 2018 
+module version : 7013
 */
 ------------------------------------------------
 set noexec off;
@@ -1310,17 +1310,44 @@ create procedure a2demo.[Customer.Children]
 	@TenantId int,
 	@UserId bigint,
 	@Fragment nvarchar(255) = null,
-	@Id bigint
+	@Id bigint,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
 as
 begin
 	set nocount on;
-	select [Children!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo
-		from a2demo.Agents
-	where Kind=N'Customer' and Folder=0 and Void=0 and (
-		Parent = @Id or
-			(@Id = -1 and upper([Name]) like N'%' + upper(@Fragment) + N'%')
-		)
-	order by Id desc;
+
+	declare @Asc nvarchar(10), @Desc nvarchar(10), @RowCount int;
+	set @Asc = N'asc'; set @Desc = N'desc';
+	set @Dir = isnull(@Dir, @Asc);
+
+	with T(Id, [Name], Code, Memo, RowNumber)
+	as (
+		select Id, [Name], Code, Memo,
+			[RowNumber] = row_number() over (
+				order by 
+					case when @Order=N'Id' and @Dir=@Asc then a.Id end asc,
+					case when @Order=N'Id' and @Dir=@Desc then a.Id end desc,
+					case when @Order=N'Name' and @Dir=@Asc then a.[Name] end asc,
+					case when @Order=N'Name' and @Dir=@Desc then a.[Name] end desc,
+					case when @Order=N'Code' and @Dir=@Asc then a.Code end asc,
+					case when @Order=N'Code' and @Dir=@Desc then a.Code end desc,
+					case when @Order=N'Memo' and @Dir=@Asc then a.Memo end asc,
+					case when @Order=N'Memo' and @Dir=@Desc then a.Memo end desc
+			)
+			from a2demo.Agents a
+		where Kind=N'Customer' and Folder=0 and Void=0 and (
+			Parent = @Id or
+				(@Id = -1 and upper([Name]) like N'%' + upper(@Fragment) + N'%')
+			)
+	) select [Children!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo,
+		[!!RowCount]  = (select count(1) from T), [!!Direction] = @Dir, [!!SortOrder] = @Order
+	from T
+		order by RowNumber offset @Offset rows fetch next @PageSize rows only;
+
+	--select [!$System!] = null, [!!Children.PageSize] = @PageSize;
 end
 go
 ------------------------------------------------
