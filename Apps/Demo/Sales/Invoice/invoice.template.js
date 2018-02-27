@@ -1,11 +1,13 @@
 ﻿/*invoice template*/
 
 const cmn = require('document/common');
+const utils = require('std:utils');
 
 const template = {
 	properties: {
 		'TRow.Sum': cmn.rowSum,
 		'TDocument.Sum': cmn.docTotalSum,
+		//'TDocument.$DatePlusOne'() { return utils.date.add(this.Date, -2, 'day');},
 		'TDocument.$canShipment': canShipment,
 		'TDocLink.$Mark'() { return this.Done ? 'success' : null; }
 	},

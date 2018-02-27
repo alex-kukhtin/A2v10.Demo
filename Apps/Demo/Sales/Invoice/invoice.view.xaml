@@ -5,14 +5,14 @@
 		<Toolbar>
 			<Button Icon="Save" Tip="Сохранить изменения" Command="{BindCmd Save}">@[Save]</Button>
 			<Button Icon="SaveClose" Tip="Сохранить изменения и закрыть документ" 
-                    Command="{BindCmd SaveAndClose}">@[SaveAndClose]</Button>
+				Command="{BindCmd SaveAndClose}">@[SaveAndClose]</Button>
 			<Button Icon="Reload" Command="{BindCmd Reload}" Tip="Обновить данные">@[Reload]</Button>
 			<Separator/>
 			<Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}}" If="{Bind !Document.Done}"/>
 			<Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}}" If="{Bind Document.Done}"/>
 			<Button Icon="Print" Content="@[Print]" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
 			<Button Icon="Close" Toolbar.Align="Right"
-              Command="{BindCmd Close}">@[Close]</Button>
+				Command="{BindCmd Close}">@[Close]</Button>
 		</Toolbar>
 	</Page.Toolbar>
 	<Page.Taskpad>

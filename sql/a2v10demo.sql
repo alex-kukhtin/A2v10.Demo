@@ -371,7 +371,10 @@ begin
 	select [!TDocParent!Map] = null, [Id!!Id] = Id, Kind, [Date], [No], [Sum]
 	from a2demo.Documents where Id in (select [ParentDoc!TDocParent!RefId] from #tmp);
 
-	select [!$System!] = null, [!!PageSize] = 20;
+	select [!$System!] = null, 
+		[!Documents!PageSize] = @PageSize, 
+		[!Documents!SortOrder] = @Order, 
+		[!Documents!SortDir] = @Dir
 end
 go
 ------------------------------------------------
@@ -1157,7 +1160,7 @@ create procedure a2demo.[Invoice.Index]
 	@TenantId int,
 	@UserId bigint,
 	@Offset int = 0,
-	@PageSize int = 20,
+	@PageSize int = 16,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc'
 as
@@ -1312,9 +1315,9 @@ create procedure a2demo.[Customer.Children]
 	@Fragment nvarchar(255) = null,
 	@Id bigint,
 	@Offset int = 0,
-	@PageSize int = 20,
-	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc'
+	@PageSize int = 10,
+	@Order nvarchar(255) = N'Name',
+	@Dir nvarchar(20) = N'asc'
 as
 begin
 	set nocount on;
@@ -1347,7 +1350,11 @@ begin
 	from T
 		order by RowNumber offset @Offset rows fetch next @PageSize rows only;
 
-	--select [!$System!] = null, [!!Children.PageSize] = @PageSize;
+	-- system data
+	select [!$System!] = null, 
+		[!Children!PageSize] = @PageSize, 
+		[!Children!SortOrder] = @Order, 
+		[!Children!SortDir] = @Dir
 end
 go
 ------------------------------------------------

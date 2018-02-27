@@ -46,7 +46,7 @@
 				</Button>
 			</Toolbar>
 			<CollectionView ItemsSource="{Bind Agents.Selected(Children)}" 
-								RunAt="Server" PageSize="20">
+								RunAt="Server">
 				<DataGrid Hover="True" HeadersVisibility="Column" ItemsSource="{Bind Parent.ItemsSource}"
 						Striped="True" Sort="True" GridLines="Vertical" FixedHeader="False"
 						DoubleClick="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents.Selected(Children)}}">
