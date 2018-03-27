@@ -8,7 +8,7 @@
 		<sys:String x:Key="OpenFolderUrl">/Agent/EditFolder</sys:String>
 	</Page.Resources>
 	<Page.CollectionView>
-		<CollectionView ItemsSource="{Bind Agents}" RunAt="ServerUrl" Filter="Fragment"/>
+		<CollectionView ItemsSource="{Bind Agents}" RunAt="Server" Filter="Fragment"/>
 	</Page.CollectionView>
 	<Splitter>
 		<Block Splitter.Width="30%" Splitter.MinWidth="150">

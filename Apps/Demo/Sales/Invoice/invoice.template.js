@@ -19,13 +19,16 @@ const template = {
 	events: {
 		'Model.load': modelLoad,
 		'Document.Rows[].add': (arr, row) => row.Qty = 1,
-		'Document.Rows[].Entity.Article.change': cmn.findArticle
+		'Document.Rows[].Entity.Article.change': cmn.findArticle,
+		'Document.Agent.change': () => { console.dir('agent.Change'); },
+		'Document.Date.change': () => { console.dir('date.Change'); }
 	},
 	commands: {
 		apply: cmn.docApply,
 		unApply: cmn.docUnApply,
 		createShipment,
-		createPayment
+		createPayment,
+		createNewCustomer
 	},
 	delegates: {
 		fetchCustomers
@@ -65,4 +68,12 @@ function canShipment() {
 function fetchCustomers(agent, text) {
 	var vm = this.$vm;
 	return vm.$invoke('fetchCustomer', { Text: text, Kind: 'Customer' });
+}
+
+async function createNewCustomer(text) {
+	var vm = this.$vm;
+	var cust = await vm.$showDialog('/Agent/editCustomer', 0, { Name: text });
+	console.warn('before set');
+	vm.Document.Agent = cust;
+	console.warn('end set');
 }

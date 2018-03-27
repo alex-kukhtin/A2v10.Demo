@@ -75,6 +75,7 @@
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
     <None Include="Demo\Agent\model.json" />
+    <None Include="Demo\Catalog\Units\model.json" />
     <None Include="Demo\Common\NotImplemented\model.json" />
     <None Include="Demo\Dashboard\model.json" />
     <None Include="Demo\Document\model.json" />
@@ -84,6 +85,7 @@
     <None Include="Demo\Purchase\WaybillIn\model.json" />
     <None Include="Demo\redirect.json" />
     <None Include="Demo\Reports\model.json" />
+    <None Include="Demo\Sales\Catalog\model.json" />
     <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
     <None Include="Demo\Sales\Waybill\model.json" />
@@ -210,6 +212,18 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Demo\Reports\invoice.registry.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Sales\Catalog\index.view.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Demo\Catalog\Units\index.view.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>

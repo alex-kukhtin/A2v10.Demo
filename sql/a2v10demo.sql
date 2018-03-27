@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 26 feb 2018 
-module version : 7013
+Last updated : 17 mar 2018 
+module version : 7014
 */
 ------------------------------------------------
 set noexec off;
@@ -21,9 +21,9 @@ go
 ------------------------------------------------
 set nocount on;
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7011);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7014);
 else
-	update a2sys.Versions set [Version] = 7011 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7014 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -210,6 +210,19 @@ begin
 end
 go
 ------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Catalogs')
+begin
+	create table a2demo.Catalogs
+	(
+		Id	bigint not null constraint PK_Catalogs primary key,
+		[Name] nvarchar(255) null,
+		[Memo] nvarchar(255) null,
+		[Url] nvarchar(255) null,
+		[Icon] nvarchar(255) null
+	);
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Metadata')
 	drop procedure a2demo.[Agent.Metadata]
 go
@@ -374,7 +387,8 @@ begin
 	select [!$System!] = null, 
 		[!Documents!PageSize] = @PageSize, 
 		[!Documents!SortOrder] = @Order, 
-		[!Documents!SortDir] = @Dir
+		[!Documents!SortDir] = @Dir,
+		[!Documents!Offset] = @Offset
 end
 go
 ------------------------------------------------
@@ -794,8 +808,12 @@ begin
 	from T
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
 	order by [!!RowNumber];
-
-	select [!$System!] = null, [!!PageSize] = 20;
+	-- system data
+	select [!$System!] = null, 
+		[!Agents!PageSize] = @PageSize, 
+		[!Agents!SortOrder] = @Order, 
+		[!Agents!SortDir] = @Dir,
+		[!Agents!Offset] = @Offset
 end
 go
 ------------------------------------------------
@@ -806,7 +824,8 @@ go
 create procedure a2demo.[Agent.Load]
 	@TenantId int,
 	@UserId bigint,
-	@Id bigint = null
+	@Id bigint = null,
+	@Name nvarchar(255) = null
 as
 begin
 	set nocount on;
@@ -815,6 +834,8 @@ begin
 		Code, Tag, Memo, Folder, ParentFolder=Parent,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
+
+	select [Params!TParam!Object] = null, [Name] = @Name;
 end
 go
 ------------------------------------------------
@@ -922,6 +943,12 @@ begin
 
 	declare @output table(op sysname, id bigint);
 
+	declare @Parent bigint;
+	select @Parent= ParentFolder from @Agent;
+	if isnull(@Parent, 0) = 0
+		select @Parent = 242; -- TODO!!!!
+
+
 	merge a2demo.Agents as target
 	using @Agent as source
 	on (target.Id = source.Id)
@@ -935,7 +962,8 @@ begin
 			target.[UserModified] = @UserId
 	when not matched by target then 
 		insert (Kind, Folder, Parent, [Name], [Code], [Type], Memo, UserCreated, UserModified)
-		values (Kind, Folder, ParentFolder, [Name], [Code], [Type], Memo, @UserId, @UserId)
+		values (Kind, Folder, @Parent, [Name], [Code], [Type], Memo, @UserId, @UserId)
+
 	output 
 		$action op,
 		inserted.Id id
@@ -970,6 +998,8 @@ begin
 	set @Asc = N'asc'; set @Desc = N'desc';
 	set @Dir = isnull(@Dir, @Asc);
 
+	declare @InitFragment nvarchar(255) = @Fragment;
+
 	if @Fragment is not null
 		set @Fragment = N'%' + upper(@Fragment) + N'%';
 
@@ -1000,7 +1030,12 @@ begin
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
 	order by [!!RowNumber];
 
-	select [!$System!] = null, [!!PageSize] = 20;
+	select [!$System!] = null, 
+		[!Entities!PageSize] = @PageSize, 
+		[!Entities!SortOrder] = @Order, 
+		[!Entities!SortDir] = @Dir,
+		[!Entities!Offset] = @Offset,
+		[!Entities.Fragment!Filter] = @InitFragment
 end
 go
 ------------------------------------------------
@@ -1167,6 +1202,24 @@ as
 begin
 	set nocount on;
 	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Invoice', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Invoice.Index.Export')
+	drop procedure a2demo.[Invoice.Index.Export]
+go
+------------------------------------------------
+create procedure a2demo.[Invoice.Index.Export]
+	@TenantId int,
+	@UserId bigint,
+	@Offset int = 0,
+	@PageSize int = 16,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc'
+as
+begin
+	set nocount on;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Invoice', @Offset=0, @PageSize=1000000, @Order=@Order, @Dir=@Dir;
 end
 go
 ------------------------------------------------
@@ -1348,13 +1401,14 @@ begin
 	) select [Children!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Code, Memo,
 		[!!RowCount]  = (select count(1) from T), [!!Direction] = @Dir, [!!SortOrder] = @Order
 	from T
-		order by RowNumber offset @Offset rows fetch next @PageSize rows only;
+		order by RowNumber offset (@Offset) rows fetch next (@PageSize) rows only;
 
 	-- system data
 	select [!$System!] = null, 
 		[!Children!PageSize] = @PageSize, 
 		[!Children!SortOrder] = @Order, 
-		[!Children!SortDir] = @Dir
+		[!Children!SortDir] = @Dir,
+		[!Children!Offset] = @Offset
 end
 go
 ------------------------------------------------
@@ -1441,7 +1495,7 @@ create procedure a2demo.[Goods.Index]
 	@UserId bigint,
 	@Id bigint = null,
 	@Offset int = 0,
-	@PageSize int = 20,
+	@PageSize int = 10,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
 	@Fragment nvarchar(255) = null
@@ -1486,6 +1540,23 @@ begin
 end
 go
 ------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Catalogs.Index')
+	drop procedure a2demo.[Catalogs.Index]
+go
+------------------------------------------------
+create procedure a2demo.[Catalogs.Index]
+	@TenantId int,
+	@UserId bigint
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select [Catalogs!TCatalog!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Memo, [Url], Icon
+	from a2demo.Catalogs 
+	order by Id;
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Dummy.Index')
 	drop procedure a2demo.[Dummy.Index]
 go
@@ -1519,6 +1590,7 @@ begin
 		(5, 1,    N'Панель',      N'dashboard',  null,     5),
 		(10, 1,   N'Продажи',     N'sales',      null,    10),
 		(20, 1,   N'Закупки',     N'purchase',   null,    20),
+		(30, 1,   N'Закупки 2',   N'purchase2',  null,    30),
 		(31, 10,  N'Документы',   null,		     null,    10),
 		(32, 10,  N'Справочники', null,		     null,    20),
 		(33, 20,  N'Документы',   null,		     null,    10),
@@ -1528,7 +1600,11 @@ begin
 		(43, 32,  N'Покупатели',  N'customer',   N'user', 10),
 		(44, 33,  N'Накладные',	  N'waybillin',  N'file', 10),
 		(45, 34,  N'Поставщики',  N'supplier',   N'user', 10),
-		(46, 34,  N'Товары',      N'goods',      N'steps',20);
+		(46, 34,  N'Товары',      N'goods',      N'steps',20),
+		(61, 30,  N'Счета',		  N'invoice',    N'file', 10),
+		(62, 30,  N'Накладные',	  N'waybill',    N'file', 20),
+		(63, 30,  N'Покупатели',  N'customer',   N'user', 30),
+		(64, 30,  N'Справочники', N'catalog',    N'list', 40)
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200
@@ -1550,6 +1626,30 @@ begin
 			values (N'std:menu', 1, 1, 1);
 	end
 	exec a2security.[Permission.UpdateAcl.Menu];
+end
+go
+------------------------------------------------
+begin
+	-- catalogs
+	declare @catalogs table(id bigint, [name] nvarchar(255), [url] nvarchar(255), icon nvarchar(255), memo nvarchar(255));
+	insert into @catalogs(id, [name], [url], icon, memo)
+	values
+		(10, N'Единицы измерения', N'/Catalog/Units/index',  N'list', N'Справочник единиц измерения'),
+		(20, N'Группы товаров',	   N'/Catalog/Groups/index', N'list', N'Справочник групп товаров')
+	merge a2demo.Catalogs as target
+	using @catalogs as source
+	on target.Id=source.id
+	when matched then
+		update set
+			target.Id = source.id,
+			target.[Name] = source.[name],
+			target.[Url] = source.[url],
+			target.[Icon] = source.icon,
+			target.[Memo] = source.[memo]
+	when not matched by target then
+		insert(Id, [Name], [Url], Icon, [Memo]) values (id,  [name], [url], icon, memo)
+	when not matched by source then
+		delete;
 end
 go
 ------------------------------------------------

@@ -41,8 +41,8 @@
 			<Panel Header="Оплаты" Style="Green" Icon="Link"
                    Collapsible="True" If="{Bind Document.Done}">
 				<Hyperlink Icon="FileContent" Content="Создать документ" 
-                           Command="{BindCmd Execute, CommandName='createPayment', Argument={Bind Document}, Confirm='Создать документ оплаты?'}" 
-                           Padding="6" Block="True"/>
+					Command="{BindCmd Execute, CommandName='createPayment', Argument={Bind Document}, Confirm='Создать документ оплаты?'}" 
+					Padding="6" Block="True"/>
 			</Panel>
 		</Taskpad>
 	</Page.Taskpad>
@@ -51,17 +51,22 @@
 		<DatePicker Grid.Row="2" Label="Дата" Value="{Bind Document.Date}"/>
 		<TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
 		<Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
-		<Selector Grid.Row="3" Grid.ColSpan="3"
-			Label="@[Purchaser]" Value="{Bind Document.Agent}" Delegate="fetchCustomers" DisplayProperty="Name">
+		<!--
+		-->
+		<Selector Grid.Row="3" Grid.ColSpan="3" Placeholder="Выберите покупателя"
+			Label="@[Purchaser]" Value="{Bind Document.Agent}" 
+				CreateNewCommand="{BindCmd Execute, CommandName='createNewCustomer'}"
+				Delegate="fetchCustomers" DisplayProperty="Name">
 			<Selector.AddOns>
 				<Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+				<Hyperlink Icon="Clear" Command="{BindCmd Clear, Argument={Bind Document.Agent}}" />
 			</Selector.AddOns>
 		</Selector>
 		<Block Grid.Row="4" Grid.ColSpan="4">
 			<Toolbar Style="Transparent">
 				<Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>
 			</Toolbar>
-			<Table ItemsSource="{Bind Document.Rows}"
+			<Table ItemsSource="{Bind Document.Rows}" CellSpacing="None"
               Width="100%" GridLines="Both" Border="True" Background="Paper"
               Columns="Fit,100,Auto,Fit,100,100,100,Fit">
 				<Table.Header>
@@ -100,7 +105,7 @@
 			</Table>
 		</Block>
 		<TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True" AutoSize="True"
-             Value="{Bind Document.Memo}" Rows="3"/>
+			Value="{Bind Document.Memo}" Rows="3"/>
 	</Grid>
 </Page>
 

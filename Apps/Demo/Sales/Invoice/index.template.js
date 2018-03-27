@@ -4,7 +4,8 @@ const utils = require('std:utils');
 const du = utils.date;
 
 const template = {
-    properties: {
+	properties: {
+		'TRoot.$ForCreate'() { return { AgentId: 11 };},
         'TDocument.$Mark': mark,
         'TDocument.$Icon'() { return this.Done ? 'flag-green' : ''; },
         'TDocument.$Shipment': getShipment,

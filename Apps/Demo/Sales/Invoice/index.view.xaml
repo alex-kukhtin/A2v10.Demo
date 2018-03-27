@@ -6,15 +6,23 @@
 		<sys:String x:Key="OpenUrl">/Sales/Invoice/Edit</sys:String>
 	</Page.Resources>
 	<Page.Toolbar>
-		<Toolbar>
-			<Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}}">@[Create]</Button>
+		<Toolbar Style="Transparent">
+			<Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}, Argument={Bind Root.$ForCreate}}">@[Create]</Button>
 			<Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
 			<Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
+			<Button Icon="Download" Content="Експорт" Command="{BindCmd Export}"/>
 			<Separator />
 			<Button Icon="Reload" Command="{BindCmd Reload}">@[Refresh]</Button>
 			<Button Icon="Menu">
 				<Button.DropDown>
 					<DropDownMenu>
+						<MenuItem Content="First element"></MenuItem>
+					</DropDownMenu>
+				</Button.DropDown>
+			</Button>
+			<Button Style="Green" Icon="Plus" Content="Create new" Toolbar.Align="Right">
+				<Button.DropDown>
+					<DropDownMenu Direction="DownRight">
 						<MenuItem Content="First element"></MenuItem>
 					</DropDownMenu>
 				</Button.DropDown>
@@ -27,6 +35,27 @@
 	<Page.Pager>
 		<Pager Source="{Bind Parent.Pager}" />
 	</Page.Pager>
+	<Block>
+		<Button Style="Green" Icon="Plus" Content="Create new" Toolbar.Align="Right">
+			<Button.DropDown>
+				<DropDownMenu Direction="DownRight">
+					<MenuItem Content="First element"></MenuItem>
+				</DropDownMenu>
+			</Button.DropDown>
+		</Button>
+		<TagLabel Style="Red">Red</TagLabel>
+		<TagLabel Style="Orange">Orange</TagLabel>
+		<TagLabel Style="Green">Green</TagLabel>
+		<TagLabel Style="Cyan">Cyan</TagLabel>
+		<TagLabel Style="Gold">Gold</TagLabel>
+		<TagLabel Style="Purple">Purple</TagLabel>
+		<TagLabel Style="Pink">Pink</TagLabel>
+		<TagLabel Style="Blue">Blue</TagLabel>
+		<TagLabel Style="Salmon">Salmon</TagLabel>
+		<TagLabel Style="Seagreen">Seagreen</TagLabel>
+		<TagLabel Style="Tan">Tan</TagLabel>
+		<TagLabel Style="Magenta">Magenta</TagLabel>
+	</Block>
 	<DataGrid ItemsSource="{Bind Parent.ItemsSource}" Hover="True" HeadersVisibility="Column"
 				Striped="True" Sort="True" GridLines="Vertical" FixedHeader="True"
 				DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}"
@@ -41,6 +70,14 @@
 		<DataGridColumn Header="@[Purchaser]" Content="{Bind Agent.Name}" />
 		<DataGridColumn Header="@[Sum]" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
 		<DataGridColumn Header="@[Memo]" Content="{Bind Memo}"/>
+		<DataGridColumn Fit="True" Width="101">
+			<CommandBar Visibility="Active">
+				<Button Icon="ArrowOpen" Tip="Открыть"/>
+				<Button Icon="Edit" Tip="Изменить"/>
+				<Button Icon="Copy" Tip="Копировать"/>
+				<Button Icon="Clear" Tip="Удалить"/>
+			</CommandBar>
+		</DataGridColumn>
 		<!--
         <DataGridColumn Header="Создал/Изменил" Content="{Bind DateModified, DataType=DateTime}"/>
         -->
