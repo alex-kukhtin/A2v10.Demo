@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 17 mar 2018 
-module version : 7014
+Last updated : 28 mar 2018 
+module version : 7016
 */
 ------------------------------------------------
 set noexec off;
@@ -20,10 +20,11 @@ end
 go
 ------------------------------------------------
 set nocount on;
+
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7014);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7016);
 else
-	update a2sys.Versions set [Version] = 7014 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7016 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -33,6 +34,19 @@ end
 go
 ------------------------------------------------
 -- Tables
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Attachments')
+begin
+	create table a2demo.Attachments
+	(
+		Id bigint identity(100, 1) not null constraint PK_Attachments primary key,
+		Name nvarchar(255) null,
+		Mime nvarchar(255) null,
+		Data varbinary(max) null,
+		DateCreated datetime not null constraint DF_Attachments_DateCreated default(getdate()),
+		UserId bigint not null
+	);
+end
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SEQUENCES where SEQUENCE_SCHEMA=N'a2demo' and SEQUENCE_NAME=N'SQ_Agents')
 	create sequence a2demo.SQ_Agents as bigint start with 100 increment by 1;
@@ -63,6 +77,27 @@ begin
 		UserModified bigint not null
 			constraint FK_Agents_UserModified_Users foreign key references a2security.Users(Id)
 	);
+end
+go
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.SEQUENCES where SEQUENCE_SCHEMA=N'a2demo' and SEQUENCE_NAME=N'SQ_Adresses')
+	create sequence a2demo.SQ_Adresses as bigint start with 100 increment by 1;
+go
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Addresses')
+begin
+	create table a2demo.[Addresses]
+	(
+		Id	bigint not null constraint PK_Address primary key
+			constraint DF_Address_PK default(next value for a2demo.SQ_Adresses),
+		Agent bigint not null
+			constraint FK_Addresses_Agent_Agents foreign key references a2demo.Agents(Id),
+		[Country] nchar(2),
+		[City] nvarchar(255),
+		[Street] nvarchar(255),
+		[Build] nvarchar(255),
+		[Appt] nvarchar(255)
+	)
 end
 go
 ------------------------------------------------
@@ -122,6 +157,7 @@ begin
 		[Name] nvarchar(255) null,
 		[Tag] nvarchar(255) null,
 		[Memo] nvarchar(255) null,
+		[Image] bigint null,
 		Unit bigint null
 			constraint FK_Entities_Unit_Units foreign key references a2demo.Units(Id),
 		DateCreated datetime not null constraint DF_Entities_DateCreated default(getdate()),
@@ -131,6 +167,12 @@ begin
 		UserModified bigint not null
 			constraint FK_Entities_UserModified_Users foreign key references a2security.Users(Id)
 	);
+end
+go
+------------------------------------------------
+if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Entities' and COLUMN_NAME=N'Image'))
+begin
+	alter table a2demo.Entities add [Image] bigint null;
 end
 go
 ------------------------------------------------
@@ -221,6 +263,40 @@ begin
 		[Icon] nvarchar(255) null
 	);
 end
+
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Countries')
+begin
+	create table a2demo.Countries
+	(
+		Code nchar(2)  constraint PK_Countries primary key,
+		[Name] nvarchar(255)
+	)
+end
+go
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Cities')
+begin
+	create table a2demo.Cities
+	(
+		Id bigint identity(1, 1) constraint PK_Cities primary key,
+		Country nchar(2) 
+			constraint FK_Cities_Country_Countries foreign key references a2demo.Countries(Code),
+		[Name] nvarchar(255)
+	)
+end
+go
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Streets')
+begin
+	create table a2demo.Streets
+	(
+		Id bigint identity(1, 1) constraint PK_Streets primary key,
+		City bigint 
+			constraint FK_Streets_City_Cities foreign key references a2demo.Cities(Id),
+		[Name] nvarchar(255)
+	)
+end
 go
 ------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Metadata')
@@ -298,6 +374,21 @@ as table(
 )
 go
 ------------------------------------------------
+if exists(select * from INFORMATION_SCHEMA.DOMAINS where DOMAIN_SCHEMA=N'a2demo' and DOMAIN_NAME=N'Address.TableType' and DATA_TYPE=N'table type')
+	drop type a2demo.[Address.TableType]
+go
+------------------------------------------------
+create type a2demo.[Address.TableType]
+as table(
+	Id	bigint,
+	[Country] nchar(2),
+	[City] nvarchar(255),
+	[Street] nvarchar(255),
+	[Build] nvarchar(255),
+	[Appt] nvarchar(255)
+)
+go
+------------------------------------------------
 if exists(select * from INFORMATION_SCHEMA.DOMAINS where DOMAIN_SCHEMA=N'a2demo' and DOMAIN_NAME=N'Entity.TableType' and DATA_TYPE=N'table type')
 	drop type a2demo.[Entity.TableType];
 go
@@ -310,7 +401,8 @@ as table(
 	[Name] nvarchar(255),
 	Article nvarchar(64),
 	[Memo] nvarchar(255),
-	Unit bigint
+	Unit bigint,
+	[Image] bigint
 )
 go
 ------------------------------------------------
@@ -321,7 +413,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Kind nvarchar(255),
 	@Offset int = 0,
@@ -397,7 +489,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Load]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Kind nvarchar(255) = null
@@ -430,7 +522,7 @@ begin
 		inner join a2demo.Documents d on u.Id in (d.UserCreated, d.UserModified)
 	where d.Id=@Id;
 
-	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article,
+	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article, e.[Image],
 		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.[Short]
 	from a2demo.Entities e
 		inner join a2demo.DocDetails dd on e.Id = dd.Entity
@@ -460,7 +552,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Report]
-	@TenantId int = 0,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -488,7 +580,7 @@ begin
 		inner join a2demo.Documents d on u.Id in (d.UserCreated, d.UserModified)
 	where d.Id=@Id;
 
-	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article,
+	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article, e.[Image],
 		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.[Short]
 	from a2demo.Entities e
 		inner join a2demo.DocDetails dd on e.Id = dd.Entity
@@ -502,7 +594,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[NextDocNo]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint,
 	@Kind nvarchar(255)
@@ -524,7 +616,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -552,7 +644,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Apply]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -573,7 +665,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.UnApply]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -599,7 +691,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -614,7 +706,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Waybill.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -629,7 +721,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[WaybillIn.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -644,7 +736,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.CreateShipment]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -701,7 +793,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Document.Update]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Kind nvarchar(255) = null,
 	@Document a2demo.[Document.TableType] readonly,
@@ -764,7 +856,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Kind nvarchar(255),
 	@Offset int = 0,
@@ -822,7 +914,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Load]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Name nvarchar(255) = null
@@ -832,8 +924,24 @@ begin
 	set transaction isolation level read uncommitted;
 	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Type], 
 		Code, Tag, Memo, Folder, ParentFolder=Parent,
+		[Address!TAddress!Object] = null,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
+
+	select [!TAddress!Object] = null, [Id!!Id] = Id, [!TAgent.Address!ParentId] = Agent,
+		Country, City, Street, Build, Appt 
+	from a2demo.Addresses where Agent = @Id;
+
+	select [Countries!TCountry!Array] = null, [Code!!Id] = Code, [Name!!Name] = [Name], [Cities!TCity!LazyArray] = null
+	from a2demo.Countries;
+
+	-- we need type declaration for City
+	select [!TCity!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Streets!TStreet!LazyArray] = null
+	from a2demo.Cities where 0 <> 0; 
+
+	-- we need type declaration for Street
+	select [!TStreet!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+	from a2demo.Streets where 0 <> 0; 
 
 	select [Params!TParam!Object] = null, [Name] = @Name;
 end
@@ -844,7 +952,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Message nvarchar(255) = N'корреспондента'
@@ -871,7 +979,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Fetch]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Kind nvarchar(255),
 	@Text nvarchar(255) = null
@@ -897,7 +1005,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Code.CheckDuplicate]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint,
 	@Code nvarchar(255)
@@ -920,14 +1028,17 @@ as
 begin
 	set nocount on;
 	declare @Agent a2demo.[Agent.TableType];
+	declare @Address a2demo.[Address.TableType];
 	select [Agent!Agent!Metadata]=null, * from @Agent;
+	select [Address!Agent.Address!Metadata]=null, * from @Address;
 end
 go
 ------------------------------------------------
 create procedure a2demo.[Agent.Update]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Agent a2demo.[Agent.TableType] readonly,
+	@Address a2demo.[Address.TableType] readonly,
 	@RetId bigint = null output
 as
 begin
@@ -937,7 +1048,7 @@ begin
 
 	/*
 	declare @xml nvarchar(max);
-	select @xml = (select * from @Agent for xml auto);
+	select @xml = (select * from @Address for xml auto);
 	throw 60000, @xml, 0;
 	*/
 
@@ -969,10 +1080,54 @@ begin
 		inserted.Id id
 	into @output(op, id);
 
-	-- todo: log
 	select top(1) @RetId = id from @output;
 
+	merge a2demo.Addresses as target
+	using @Address as source
+	on (target.Id = source.Id)
+	when matched then update set
+		target.Country = source.Country, target.City = source.City, target.Street = source.Street,
+		target.Build = source.Build, target.Appt = source.Appt
+	when not matched by target then
+		insert (Agent, Country, City, Street, Build, Appt) values (@RetId, Country, City, Street, Build, Appt);
+
+	-- todo: log
+
 	exec a2demo.[Agent.Load] @TenantId, @UserId, @RetId;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Cities')
+	drop procedure a2demo.[Agent.Cities]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Cities]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id nchar(2)
+as
+begin
+	set nocount on;
+	--throw 60000, @Id, 0;
+	select [Cities!TCity!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+		from a2demo.Cities where Country=@Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Streets')
+	drop procedure a2demo.[Agent.Streets]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Streets]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id nchar(2)
+as
+begin
+	set nocount on;
+	--throw 60000, @Id, 0;
+	select [Streets!TStreet!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+		from a2demo.Streets where City=@Id;
 end
 go
 ------------------------------------------------
@@ -981,7 +1136,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Kind nvarchar(255),
 	@Offset int = 0,
@@ -1004,9 +1159,9 @@ begin
 		set @Fragment = N'%' + upper(@Fragment) + N'%';
 
 	-- list of users
-	with T([Id!!Id], [Name], Article, Memo, [Unit.Id!TUnit!Id], [Unit.Short!TUnit!], [!!RowNumber])
+	with T([Id!!Id], [Name], Article, [Image], Memo, [Unit.Id!TUnit!Id], [Unit.Short!TUnit!], [!!RowNumber])
 	as(
-		select e.Id, e.[Name], Article, e.Memo,
+		select e.Id, e.[Name], Article, [Image], e.Memo,
 			Unit, u.Short,
 			[!!RowNumber] = row_number() over (
 			 order by
@@ -1044,14 +1199,14 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Load]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select [Entity!TEntity!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Article, Tag, Memo,
+	select [Entity!TEntity!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Article, [Image], Tag, Memo,
 		[Unit!TUnit!RefId] = Unit,
 		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified
 	from a2demo.Entities where Id=@Id and Void=0;
@@ -1071,14 +1226,14 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.FindArticle]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Article nvarchar(64) = null
 as
 begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
-	select top(1) [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, Tag, e.Memo,
+	select top(1) [Entity!TEntity!Object] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], Article, [Image], Tag, e.Memo,
 		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.Short,
 		e.DateCreated, e.DateModified
 	from a2demo.Entities e 
@@ -1093,7 +1248,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Message nvarchar(255) = N'объект учета'
@@ -1120,7 +1275,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Article.CheckDuplicate]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint,
 	@Article nvarchar(255)
@@ -1148,7 +1303,7 @@ end
 go
 ------------------------------------------------
 create procedure a2demo.[Entity.Update]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Entity a2demo.[Entity.TableType] readonly,
 	@RetId bigint = null output
@@ -1158,6 +1313,7 @@ begin
 	set transaction isolation level read committed;
 	set xact_abort on;
 
+	--throw 60000, @UserId, 0;
 
 	declare @output table(op sysname, id bigint);
 
@@ -1168,13 +1324,14 @@ begin
 		update set 
 			target.[Name] = source.[Name],
 			target.[Article] = source.[Article],
+			target.[Image] = source.[Image],
 			target.[Memo] = source.Memo,
 			target.Unit = source.Unit,
 			target.[DateModified] = getdate(),
 			target.[UserModified] = @UserId
 	when not matched by target then 
-		insert (Kind, [Name], [Article], Memo, Unit, UserCreated, UserModified)
-		values (Kind, [Name], [Article], Memo, Unit, @UserId, @UserId)
+		insert (Kind, [Name], [Article], [Image], Memo, Unit, UserCreated, UserModified)
+		values (Kind, [Name], [Article], [Image], Memo, Unit, @UserId, @UserId)
 	output 
 		$action op,
 		inserted.Id id
@@ -1187,12 +1344,56 @@ begin
 end
 go
 ------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Entity.Image.Load')
+	drop procedure a2demo.[Entity.Image.Load]
+go
+------------------------------------------------
+create procedure [a2demo].[Entity.Image.Load]
+@TenantId int = null,
+@UserId bigint,
+@Id bigint = null,
+@Key nvarchar(255)
+as
+begin
+	set nocount on;
+	select Mime, Stream = [Data], [Name] from a2demo.Attachments where Id=@Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Entity.Image.Update')
+	drop procedure a2demo.[Entity.Image.Update]
+go
+------------------------------------------------
+create procedure [a2demo].[Entity.Image.Update]
+@TenantId int = null,
+@UserId bigint,
+@Id bigint,
+@Key nvarchar(255),
+@Mime nvarchar(255),
+@Name nvarchar(255),
+@Stream varbinary(max),
+@RetId bigint output
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+
+	declare @rtable table (Id bigint);
+	
+	insert into a2demo.Attachments(UserId, [Name], Mime, [Data])
+		output inserted.Id into @rtable
+	values(@UserId, @Name, @Mime, @Stream);
+
+	select @RetId = Id from @rtable;
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Invoice.Index')
 	drop procedure a2demo.[Invoice.Index]
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Offset int = 0,
 	@PageSize int = 16,
@@ -1210,7 +1411,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.Index.Export]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Offset int = 0,
 	@PageSize int = 16,
@@ -1228,7 +1429,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Waybill.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Offset int = 0,
 	@PageSize int = 20,
@@ -1246,7 +1447,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[WaybillIn.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Offset int = 0,
 	@PageSize int = 20,
@@ -1264,7 +1465,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Index.Dynamic]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Fragment nvarchar(255) = null,
 	@Id bigint = null
@@ -1299,7 +1500,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Fragment nvarchar(255) = null,
 	@Id bigint = null
@@ -1342,7 +1543,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Expand]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Fragment nvarchar(255) = null,
 	@Id bigint
@@ -1363,7 +1564,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Children]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Fragment nvarchar(255) = null,
 	@Id bigint,
@@ -1417,7 +1618,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -1432,7 +1633,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Customer.Browse.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Offset int = 0,
@@ -1454,7 +1655,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Supplier.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Offset int = 0,
@@ -1476,7 +1677,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Supplier.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -1491,7 +1692,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Goods.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null,
 	@Offset int = 0,
@@ -1513,7 +1714,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Goods.Delete]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -1528,7 +1729,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Invoice.Registry.Load]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint,
 	@Id bigint = null
 as
@@ -1545,7 +1746,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Catalogs.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint
 as
 begin
@@ -1562,7 +1763,7 @@ if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2de
 go
 ------------------------------------------------
 create procedure a2demo.[Dummy.Index]
-	@TenantId int,
+	@TenantId int = null,
 	@UserId bigint
 as
 begin
@@ -1671,6 +1872,38 @@ begin
 		values 
 		(N'Warehouse', N'Основной склад', 0, 0),
 		(N'Warehouse', N'Склад материалов', 0, 0);
+end
+go
+------------------------------------------------
+if not exists(select * from a2demo.Countries where Code=N'UA') 
+begin
+	insert into a2demo.Countries(Code, [Name])
+		values 
+		(N'UA', N'Украина'),
+		(N'US', N'Соединенные штаты');
+end
+go
+------------------------------------------------
+if not exists(select * from a2demo.Cities) 
+begin
+	insert into a2demo.Cities(Country, [Name])
+		values 
+		(N'UA', N'Киев'),
+		(N'UA', N'Черновцы'),
+		(N'US', N'Редмонд'),
+		(N'US', N'Нью-Йорк');
+end
+go
+------------------------------------------------
+if not exists(select * from a2demo.Streets) 
+begin
+	declare @id bigint;
+
+	select @id = Id from a2demo.Cities where Name=N'Киев';
+	insert into a2demo.Streets(City, [Name])
+		values 
+		(@id, N'ул. Крещатик'),
+		(@id, N'ул. Б. Васильковская')
 end
 go
 ------------------------------------------------

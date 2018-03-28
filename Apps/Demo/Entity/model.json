@@ -1,5 +1,6 @@
 ﻿{
-  "schema": "a2demo",
+	"schema": "a2demo",
+	"model": "Entity",
   "dialogs": {
     "browseGoods": {
       "index": true,
@@ -7,7 +8,6 @@
       "view": "browseGoods.dialog"
     },
     "editGoods": {
-      "model": "Entity",
       "view": "editGoods.dialog",
       "template": "editGoods.template"
     }

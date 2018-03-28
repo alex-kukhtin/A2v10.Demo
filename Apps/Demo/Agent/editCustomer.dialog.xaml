@@ -43,7 +43,24 @@
 					</TextBox.Validator>
 				</TextBox>
 			</Grid>
-
+		</Tab>
+		<Tab Header="Адрес">
+			<Grid Columns="1*, 1*">
+				<ComboBox Label="Страна" Grid.Row="1" ItemsSource="{Bind Countries}"
+						Value="{Bind Agent.Address.Country}">
+					<ComboBoxItem Content="{Bind Name}" Value="{Bind Code}"/>
+				</ComboBox>
+				<ComboBox Label="Город" Grid.Row="2"
+						 Value="{Bind Agent.Address.City}" ItemsSource="{Bind Root.$Cities}">
+					<ComboBoxItem Content="{Bind Name}" Value="{Bind Name}"/>
+				</ComboBox>
+				<ComboBox Label="Улица" Grid.Row="3"
+						 Value="{Bind Agent.Address.Street}" ItemsSource="{Bind Root.$Streets}">
+					<ComboBoxItem Content="{Bind Name}" Value="{Bind Name}"/>
+				</ComboBox>
+				<TextBox Label="Дом" Grid.Row="1" Grid.Col="2" Value="{Bind Agent.Address.Build}"/>
+				<TextBox Label="Квартира" Grid.Row="2" Grid.Col="2" Value="{Bind Agent.Address.Appt}"/>
+			</Grid>
 		</Tab>
 	</TabPanel>
 </Dialog>
