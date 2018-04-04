@@ -107,5 +107,12 @@
 		<TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True" AutoSize="True"
 			Value="{Bind Document.Memo}" Rows="3"/>
 	</Grid>
+	<!--
+	<Table>
+		<TableRow>
+			<DatePicker Value="{Bind Document.Date}" Direction="Up"/>
+		</TableRow>
+	</Table>
+	-->
 </Page>
 

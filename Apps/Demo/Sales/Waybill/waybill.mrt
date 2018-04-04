@@ -128,6 +128,7 @@
     <DataSources isList="true" count="0" />
     <Relations isList="true" count="0" />
     <Report isRef="0" />
+    <Resources isList="true" count="0" />
     <Variables isList="true" count="0" />
   </Dictionary>
   <EngineVersion>EngineV2</EngineVersion>
@@ -896,7 +897,7 @@
   <ReportGuid>c842b12c4e984981b26394655599f484</ReportGuid>
   <ReportName>Report</ReportName>
   <ReportUnit>Centimeters</ReportUnit>
-  <ReportVersion>2016.1.0</ReportVersion>
+  <ReportVersion>2018.1.8.0</ReportVersion>
   <Script>using System;
 using System.Drawing;
 using System.Windows.Forms;

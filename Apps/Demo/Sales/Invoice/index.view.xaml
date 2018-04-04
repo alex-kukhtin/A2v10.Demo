@@ -7,7 +7,7 @@
 	</Page.Resources>
 	<Page.Toolbar>
 		<Toolbar Style="Transparent">
-			<Button Icon="Add" Tip="Создать счет" Command="{BindCmd Create, Url={StaticResource OpenUrl}, Argument={Bind Root.$ForCreate}}">@[Create]</Button>
+			<Button Icon="Add" Tip="Создать счет2" Command="{BindCmd Create, Url={StaticResource OpenUrl}, Argument={Bind Root.$ForCreate}}">@[Create]</Button>
 			<Button Icon="ArrowOpen" Command="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">Открыть</Button>
 			<Button Icon="Delete" Command="{BindCmd DbRemoveSelected, Argument={Bind Documents}, Confirm='@[ConfirmDeleteDocument]'}">@[Delete]</Button>
 			<Button Icon="Download" Content="Експорт" Command="{BindCmd Export}"/>
@@ -16,10 +16,11 @@
 			<Button Icon="Menu">
 				<Button.DropDown>
 					<DropDownMenu>
-						<MenuItem Content="First element"></MenuItem>
+						<MenuItem Content="Drop down item" Icon="Package"></MenuItem>
 					</DropDownMenu>
 				</Button.DropDown>
 			</Button>
+			<!--
 			<Button Style="Green" Icon="Plus" Content="Create new" Toolbar.Align="Right">
 				<Button.DropDown>
 					<DropDownMenu Direction="DownRight">
@@ -27,6 +28,7 @@
 					</DropDownMenu>
 				</Button.DropDown>
 			</Button>
+			-->
 		</Toolbar>
 	</Page.Toolbar>
 	<Page.CollectionView>
@@ -35,10 +37,10 @@
 	<Page.Pager>
 		<Pager Source="{Bind Parent.Pager}" />
 	</Page.Pager>
-	<Block>
-		<Button Style="Green" Icon="Plus" Content="Create new" Toolbar.Align="Right">
+	<Block Padding="0, 0, 0, 20" If="False">
+		<Button Style="Green" Icon="Plus" Content="Create new">
 			<Button.DropDown>
-				<DropDownMenu Direction="DownRight">
+				<DropDownMenu Direction="DownLeft">
 					<MenuItem Content="First element"></MenuItem>
 				</DropDownMenu>
 			</Button.DropDown>

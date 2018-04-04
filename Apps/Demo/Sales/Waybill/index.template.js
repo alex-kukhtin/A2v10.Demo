@@ -9,7 +9,13 @@ const template = {
         'TDocument.$Icon'() { return this.Done ? 'flag-green' : ''; },
         "TDocument.$HasParent"() { return this.ParentDoc.Id !== 0; },
         "TDocParent.$Name": parentName
-    },
+	},
+	commands: {
+		clearFilter(f) {
+			f.Id = 0;
+			f.Name = ''
+		}
+	}
 };
 
 

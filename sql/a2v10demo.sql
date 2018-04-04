@@ -419,7 +419,8 @@ create procedure a2demo.[Document.Index]
 	@Offset int = 0,
 	@PageSize int = 20,
 	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc'
+	@Dir nvarchar(20) = N'desc',
+	@Agent bigint = null
 as
 begin
 	set nocount on;
@@ -459,7 +460,7 @@ begin
 			left join a2demo.Agents a on d.Agent = a.Id
 			left join a2demo.Agents f on d.DepFrom = f.Id
 			left join a2demo.Agents t on d.DepTo = t.Id
-		where d.Kind=@Kind
+		where d.Kind=@Kind and (@Agent is null or d.Agent = @Agent)
 	)
 	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, 
 		[!!RowCount] = (select count(1) from T)
@@ -480,7 +481,9 @@ begin
 		[!Documents!PageSize] = @PageSize, 
 		[!Documents!SortOrder] = @Order, 
 		[!Documents!SortDir] = @Dir,
-		[!Documents!Offset] = @Offset
+		[!Documents!Offset] = @Offset,
+		[!Documents.Agent.Id!Filter] = @Agent,
+		[!Documents.Agent.Name!Filter] = (select [Name] from a2demo.Agents where Id=@Agent);
 end
 go
 ------------------------------------------------
@@ -1434,11 +1437,13 @@ create procedure a2demo.[Waybill.Index]
 	@Offset int = 0,
 	@PageSize int = 20,
 	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc'
+	@Dir nvarchar(20) = N'desc',
+	@Agent bigint = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Waybill', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Waybill', @Offset=@Offset, @PageSize=@PageSize, 
+		@Order=@Order, @Dir=@Dir, @Agent = @Agent;
 end
 go
 ------------------------------------------------

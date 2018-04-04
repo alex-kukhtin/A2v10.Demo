@@ -26,8 +26,8 @@ const template = {
     },
     commands: {
         apply: cmn.docApply,
-        unApply: cmn.docUnApply
-    }
+		unApply: cmn.docUnApply
+	}
 };
 
 module.exports = template;
