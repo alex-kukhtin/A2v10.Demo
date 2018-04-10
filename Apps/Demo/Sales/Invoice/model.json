@@ -36,7 +36,8 @@
 		"invoice": {
 			"type": "stimulsoft",
 			"report": "invoice",
-			"model": "Document"
+					"model": "Document",
+					"name": "@[Invoice]"
 		}
 	}
 }

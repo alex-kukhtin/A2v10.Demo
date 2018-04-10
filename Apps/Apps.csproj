@@ -55,7 +55,7 @@
     <Content Include="Demo\Dashboard\Images\Test.png" />
     <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
-    <Content Include="Demo\Localization\application.uk.txt" />
+    <Content Include="Demo\_localization\application.uk.txt" />
     <Content Include="Demo\Purchase\WaybillIn\index.template.js" />
     <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />
     <Content Include="Demo\Sales\Customer\index.template.js" />
@@ -66,6 +66,10 @@
     <Content Include="Demo\Sales\Invoice\index.template.js" />
     <Content Include="Demo\Sales\Waybill\index.template.js" />
     <Content Include="Demo\Sales\Waybill\waybill.template.js" />
+    <Content Include="Demo\_assets\app.css" />
+    <Content Include="Demo\_assets\app.min.css">
+      <DependentUpon>app.css</DependentUpon>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\a2v10\Web.config">
@@ -74,6 +78,10 @@
     <None Include="Admin\Identity\Group\model.json" />
     <None Include="Admin\Identity\Role\model.json" />
     <None Include="Admin\Identity\User\model.json" />
+    <None Include="compilerconfig.json" />
+    <None Include="compilerconfig.json.defaults">
+      <DependentUpon>compilerconfig.json</DependentUpon>
+    </None>
     <None Include="Demo\Agent\model.json" />
     <None Include="Demo\Catalog\Units\model.json" />
     <None Include="Demo\Common\NotImplemented\model.json" />
@@ -89,6 +97,7 @@
     <None Include="Demo\Sales\Customer\model.json" />
     <None Include="Demo\Sales\Invoice\model.json" />
     <None Include="Demo\Sales\Waybill\model.json" />
+    <None Include="Demo\_less\app.less" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Admin\Identity\Group\browse.dialog.xaml">

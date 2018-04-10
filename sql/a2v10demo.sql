@@ -157,7 +157,8 @@ begin
 		[Name] nvarchar(255) null,
 		[Tag] nvarchar(255) null,
 		[Memo] nvarchar(255) null,
-		[Image] bigint null,
+		[Image] bigint null
+			constraint FK_Entities_Image_Attachments foreign key references a2demo.Attachments(Id),
 		Unit bigint null
 			constraint FK_Entities_Unit_Units foreign key references a2demo.Units(Id),
 		DateCreated datetime not null constraint DF_Entities_DateCreated default(getdate()),
@@ -173,6 +174,7 @@ go
 if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Entities' and COLUMN_NAME=N'Image'))
 begin
 	alter table a2demo.Entities add [Image] bigint null;
+	alter table a2demo.Entities add constraint FK_Entities_Image_Attachments foreign key ([Image]) references a2demo.Attachments(Id);
 end
 go
 ------------------------------------------------
@@ -420,7 +422,8 @@ create procedure a2demo.[Document.Index]
 	@PageSize int = 20,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
-	@Agent bigint = null
+	@Agent bigint = null,
+	@GroupBy nvarchar(255) = N''
 as
 begin
 	set nocount on;
@@ -482,6 +485,7 @@ begin
 		[!Documents!SortOrder] = @Order, 
 		[!Documents!SortDir] = @Dir,
 		[!Documents!Offset] = @Offset,
+		[!Documents!GroupBy] = @GroupBy,
 		[!Documents.Agent.Id!Filter] = @Agent,
 		[!Documents.Agent.Name!Filter] = (select [Name] from a2demo.Agents where Id=@Agent);
 end
@@ -1327,14 +1331,14 @@ begin
 		update set 
 			target.[Name] = source.[Name],
 			target.[Article] = source.[Article],
-			target.[Image] = source.[Image],
+			target.[Image] = nullif(source.[Image], 0),
 			target.[Memo] = source.Memo,
 			target.Unit = source.Unit,
 			target.[DateModified] = getdate(),
 			target.[UserModified] = @UserId
 	when not matched by target then 
 		insert (Kind, [Name], [Article], [Image], Memo, Unit, UserCreated, UserModified)
-		values (Kind, [Name], [Article], [Image], Memo, Unit, @UserId, @UserId)
+		values (Kind, [Name], [Article], nullif([Image], 0), Memo, Unit, @UserId, @UserId)
 	output 
 		$action op,
 		inserted.Id id
@@ -1457,11 +1461,12 @@ create procedure a2demo.[WaybillIn.Index]
 	@Offset int = 0,
 	@PageSize int = 20,
 	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc'
+	@Dir nvarchar(20) = N'desc',
+	@GroupBy nvarchar(255) = N'Agent.Name'
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'WaybillIn', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'WaybillIn', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir, @GroupBy=@GroupBy;
 end
 go
 ------------------------------------------------
@@ -1789,28 +1794,28 @@ go
 ------------------------------------------------
 begin
 	-- create user menu
-	declare @menu table(id bigint, p0 bigint, [name] nvarchar(255), [url] nvarchar(255), icon nvarchar(255), [order] int);
-	insert into @menu(id, p0, [name], [url], icon, [order])
+	declare @menu table(id bigint, p0 bigint, [name] nvarchar(255), [url] nvarchar(255), icon nvarchar(255), [order] int, help nvarchar(255));
+	insert into @menu(id, p0, [name], [url], icon, [order], [help])
 	values
-		(1, null, N'Default',     null,          null,     0),
-		(5, 1,    N'Панель',      N'dashboard',  null,     5),
-		(10, 1,   N'Продажи',     N'sales',      null,    10),
-		(20, 1,   N'Закупки',     N'purchase',   null,    20),
-		(30, 1,   N'Закупки 2',   N'purchase2',  null,    30),
-		(31, 10,  N'Документы',   null,		     null,    10),
-		(32, 10,  N'Справочники', null,		     null,    20),
-		(33, 20,  N'Документы',   null,		     null,    10),
-		(34, 20,  N'Справочники', null,		     null,    20),
-		(41, 31,  N'Счета',		  N'invoice',    N'file', 10),
-		(42, 31,  N'Накладные',	  N'waybill',    N'file', 20),
-		(43, 32,  N'Покупатели',  N'customer',   N'user', 10),
-		(44, 33,  N'Накладные',	  N'waybillin',  N'file', 10),
-		(45, 34,  N'Поставщики',  N'supplier',   N'user', 10),
-		(46, 34,  N'Товары',      N'goods',      N'steps',20),
-		(61, 30,  N'Счета',		  N'invoice',    N'file', 10),
-		(62, 30,  N'Накладные',	  N'waybill',    N'file', 20),
-		(63, 30,  N'Покупатели',  N'customer',   N'user', 30),
-		(64, 30,  N'Справочники', N'catalog',    N'list', 40)
+		(1, null, N'Default',     null,          null,     0, null),
+		(5, 1,    N'Панель',      N'dashboard',  null,     5, '/help/dashboard'),
+		(10, 1,   N'Продажи',     N'sales',      null,    10, '/help/sales'),
+		(20, 1,   N'Закупки',     N'purchase',   null,    20, '/help/purchase'),
+		(30, 1,   N'Закупки 2',   N'purchase2',  null,    30, null),
+		(31, 10,  N'Документы',   null,		     null,    10, null),
+		(32, 10,  N'Справочники', null,		     null,    20, null),
+		(33, 20,  N'Документы',   null,		     null,    10, null),
+		(34, 20,  N'Справочники', null,		     null,    20, null),
+		(41, 31,  N'Счета',		  N'invoice',    N'file', 10, null),
+		(42, 31,  N'Накладные',	  N'waybill',    N'file', 20, null),
+		(43, 32,  N'Покупатели',  N'customer',   N'user', 10, null),
+		(44, 33,  N'Накладные',	  N'waybillin',  N'file', 10, null),
+		(45, 34,  N'Поставщики',  N'supplier',   N'user', 10, null),
+		(46, 34,  N'Товары',      N'goods',      N'steps',20, null),
+		(61, 30,  N'Счета',		  N'invoice',    N'file', 10, null),
+		(62, 30,  N'Накладные',	  N'waybill',    N'file', 20, null),
+		(63, 30,  N'Покупатели',  N'customer',   N'user', 30, null),
+		(64, 30,  N'Справочники', N'catalog',    N'list', 40, null)
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200
@@ -1820,9 +1825,10 @@ begin
 			target.[Name] = source.[name],
 			target.[Url] = source.[url],
 			target.[Icon] = source.icon,
-			target.[Order] = source.[order]
+			target.[Order] = source.[order],
+			target.Help = source.help
 	when not matched by target then
-		insert(Id, Parent, [Name], [Url], Icon, [Order]) values (id, p0, [name], [url], icon, [order])
+		insert(Id, Parent, [Name], [Url], Icon, [Order], Help) values (id, p0, [name], [url], icon, [order], help)
 	when not matched by source and target.Id >= 1 and target.Id < 200 then 
 		delete;
 

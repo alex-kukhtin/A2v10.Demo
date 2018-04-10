@@ -1,0 +1,5 @@
+﻿;
+@Sure.ApplyDocument=Провести документ?
+@Sure.UnApplyDocument=Скасувати проведення документа?
+@Export=Експорт
+@Invoice=Счет покупателю

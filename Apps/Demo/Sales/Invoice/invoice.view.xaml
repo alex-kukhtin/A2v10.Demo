@@ -11,6 +11,7 @@
 			<Button Icon="Gear" Content="Провести" Command="{BindCmd Execute, CommandName='apply', Argument={Bind Document}}" If="{Bind !Document.Done}"/>
 			<Button Icon="UnlockOutline" Content="Отменить проведение" Command="{BindCmd Execute, CommandName='unApply', Argument={Bind Document}}" If="{Bind Document.Done}"/>
 			<Button Icon="Print" Content="@[Print]" Command="{BindCmd Report, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
+			<Button Icon="Download" Content="@[Export]" Command="{BindCmd Report, Export=True, Report='Invoice', Argument={Bind Document}, SaveRequired=True}"/>
 			<Button Icon="Close" Toolbar.Align="Right"
 				Command="{BindCmd Close}">@[Close]</Button>
 		</Toolbar>
