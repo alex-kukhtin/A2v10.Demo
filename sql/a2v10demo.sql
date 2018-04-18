@@ -1201,6 +1201,23 @@ begin
 end
 go
 ------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.State.Load')
+	drop procedure a2demo.[Agent.State.Load]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.State.Load]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Type]
+	from a2demo.Agents where Id=@Id;
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Entity.Load')
 	drop procedure a2demo.[Entity.Load]
 go

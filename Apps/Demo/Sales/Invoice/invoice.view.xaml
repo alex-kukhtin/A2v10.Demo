@@ -60,6 +60,15 @@
 				Delegate="fetchCustomers" DisplayProperty="Name">
 			<Selector.AddOns>
 				<Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+				<Hyperlink Icon="Menu">
+					<Hyperlink.DropDown>
+						<DropDownMenu Direction="DownLeft">
+							<MenuItem Icon="Search" Content="Выбрать" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+							<MenuItem Icon="Edit" Content="Изменить" Command="{BindCmd Dialog, Action=Edit, Argument={Bind Document.Agent}, Url='/Agent/EditCustomer'}"/>
+							<MenuItem Icon="Clear" Content="Очистить" Command="{BindCmd Clear, Argument={Bind Document.Agent}}" />
+						</DropDownMenu>
+					</Hyperlink.DropDown>
+				</Hyperlink>
 				<Hyperlink Icon="Clear" Command="{BindCmd Clear, Argument={Bind Document.Agent}}" />
 			</Selector.AddOns>
 		</Selector>
@@ -106,7 +115,10 @@
 			</Table>
 		</Block>
 		<TextBox Grid.Row="6" Grid.ColSpan="4" Label="@[Memo]" Multiline="True" AutoSize="True"
-			Value="{Bind Document.Memo}" Rows="3"/>
+			Value="{Bind Document.Memo}" Rows="3" UpdateTrigger="Input"/>
+		<!--
+			<Code Grid.Row="7" Content="{Bind Document.Memo}"></Code>
+		-->
 	</Grid>
 	<!--
 	<Table>

@@ -50,11 +50,14 @@
 				MarkerStyle="Both" Mark="{Bind $Mark}">
 		<DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Wrap="NoWrap"
 			Command="{BindCmd Open, Url={StaticResource OpenUrl}}" Icon="{Bind $Icon}"/>
-		<DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
-		<DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right"/>
-		<DataGridColumn Header="Покупатель" Content="{Bind Agent.Name}" />
+		<DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" Wrap="NoWrap"/>
+		<DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right" Wrap="NoWrap"/>
+		<DataGridColumn Header="Покупатель">
+			<Popover Placement="BottomRight" If="{Bind Agent.Id}"
+				Text="{Bind Agent.Name}" Url="{Bind $AgentPopoverUrl}"/>
+		</DataGridColumn>
 		<DataGridColumn Header="Склад" Content="{Bind DepFrom.Name}" />
-		<DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
+		<DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True" Wrap="NoWrap"/>
 		<DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
 		<DataGrid.RowDetails>
 			<DataGridRowDetails Visible="{Bind $HasParent}" Activate="Cell">

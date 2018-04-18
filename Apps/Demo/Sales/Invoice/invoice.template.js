@@ -20,8 +20,8 @@ const template = {
 		'Model.load': modelLoad,
 		'Document.Rows[].add': (arr, row) => row.Qty = 1,
 		'Document.Rows[].Entity.Article.change': cmn.findArticle,
-		'Document.Agent.change': () => { console.dir('agent.Change'); },
-		'Document.Date.change': () => { console.dir('date.Change'); }
+		'Document.Agent.change': (doc) => { console.dir('Agent.change'); },
+		'Document.Date.change': (doc) => { console.dir('Date.change'); }
 	},
 	commands: {
 		apply: cmn.docApply,
