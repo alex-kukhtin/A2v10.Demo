@@ -2,8 +2,8 @@
 ------------------------------------------------
 Copyright © 2008-2018 Alex Kukhtin
 
-Last updated : 28 mar 2018 
-module version : 7016
+Last updated : 25 apr 2018 
+module version : 7017
 */
 ------------------------------------------------
 set noexec off;
@@ -22,9 +22,9 @@ go
 set nocount on;
 
 if not exists(select * from a2sys.Versions where Module = N'demo')
-	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7016);
+	insert into a2sys.Versions (Module, [Version]) values (N'demo', 7017);
 else
-	update a2sys.Versions set [Version] = 7016 where Module = N'demo';
+	update a2sys.Versions set [Version] = 7017 where Module = N'demo';
 go
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=N'a2demo')
@@ -63,13 +63,14 @@ begin
 			constraint DF_Agents_Void default(0),
 		Folder bit not null
 			constraint DF_Agents_Folder default(0),
-		Parent bigint null
-			constraint FK_Agents_Parent_Agents foreign key references a2demo.Agents(Id),
+		Parent bigint null,
+			--constraint FK_Agents_Parent_Agents foreign key references a2demo.Agents(Id),
 		[Type] nchar(1),
 		[Code] nvarchar(32) null,
 		[Name] nvarchar(255) null,
 		[Tag] nvarchar(255) null,
 		[Memo] nvarchar(255) null,
+		[Phone] nvarchar(32) null,
 		DateCreated datetime not null constraint DF_Agents_DateCreated default(getdate()),
 		UserCreated bigint not null
 			constraint FK_Agents_UserCreated_Users foreign key references a2security.Users(Id),
@@ -77,6 +78,12 @@ begin
 		UserModified bigint not null
 			constraint FK_Agents_UserModified_Users foreign key references a2security.Users(Id)
 	);
+end
+go
+------------------------------------------------
+if exists(select * from INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS where CONSTRAINT_NAME=N'FK_Agents_Parent_Agents' and CONSTRAINT_SCHEMA=N'a2demo')
+begin
+	alter table a2demo.Agents drop constraint FK_Agents_Parent_Agents;
 end
 go
 ------------------------------------------------
@@ -112,6 +119,13 @@ begin
 	alter table a2demo.Agents add [Type] nchar(1);
 end
 go
+------------------------------------------------
+if (not exists (select 1 from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'Agents' and COLUMN_NAME=N'Phone'))
+begin
+	alter table a2demo.Agents add [Phone] nvarchar(32) null;
+end
+go
+
 ------------------------------------------------
 if not exists(select * from INFORMATION_SCHEMA.SEQUENCES where SEQUENCE_SCHEMA=N'a2demo' and SEQUENCE_NAME=N'SQ_Units')
 	create sequence a2demo.SQ_Units as bigint start with 100 increment by 1;
@@ -372,6 +386,7 @@ as table(
 	ParentFolder bigint,
 	[Name] nvarchar(255),
 	Code nvarchar(32),
+	Phone nvarchar(32),
 	[Memo] nvarchar(255)
 )
 go
@@ -884,9 +899,9 @@ begin
 		set @Fragment = N'%' + upper(@Fragment) + N'%';
 
 	-- list of users
-	with T([Id!!Id], [Name], Code, Memo, [!!RowNumber])
+	with T([Id!!Id], [Name], Code, Memo, Phone, [!!RowNumber])
 	as(
-		select a.Id, a.[Name], Code, a.Memo,
+		select a.Id, a.[Name], Code, a.Memo, a.Phone,
 			[!!RowNumber] = row_number() over (
 			 order by
 				case when @Order=N'Id' and @Dir = @Asc then a.Id end asc,
@@ -930,7 +945,7 @@ begin
 	set nocount on;
 	set transaction isolation level read uncommitted;
 	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Type], 
-		Code, Tag, Memo, Folder, ParentFolder=Parent,
+		Code, Tag, Memo, Folder, ParentFolder=Parent, Phone,
 		[Address!TAddress!Object] = null,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
@@ -1076,11 +1091,12 @@ begin
 			target.[Code] = source.[Code],
 			target.[Memo] = source.Memo,
 			target.[Type] = source.[Type],
+			target.[Phone] = source.[Phone],
 			target.[DateModified] = getdate(),
 			target.[UserModified] = @UserId
 	when not matched by target then 
-		insert (Kind, Folder, Parent, [Name], [Code], [Type], Memo, UserCreated, UserModified)
-		values (Kind, Folder, @Parent, [Name], [Code], [Type], Memo, @UserId, @UserId)
+		insert (Kind, Folder, Parent, [Name], [Code], [Type], Phone, Memo, UserCreated, UserModified)
+		values (Kind, Folder, @Parent, [Name], [Code], [Type], Phone, Memo, @UserId, @UserId)
 
 	output 
 		$action op,
