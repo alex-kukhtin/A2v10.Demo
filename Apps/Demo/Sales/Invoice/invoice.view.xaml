@@ -55,7 +55,7 @@
 		<!--
 		-->
 		<Selector Grid.Row="3" Grid.ColSpan="3" Placeholder="Выберите покупателя"
-			Label="@[Purchaser]" Value="{Bind Document.Agent}" 
+			Label="@[Purchaser]" Value="{Bind Document.Agent}" ListSize="600,400"
 				CreateNewCommand="{BindCmd Execute, CommandName='createNewCustomer'}"
 				Delegate="fetchCustomers" DisplayProperty="Name">
 			<Selector.AddOns>
@@ -72,7 +72,22 @@
 				<Hyperlink Icon="Clear" Command="{BindCmd Clear, Argument={Bind Document.Agent}}" />
 			</Selector.AddOns>
 		</Selector>
-		<Block Grid.Row="4" Grid.ColSpan="4">
+		<Selector Grid.Row="4" Grid.ColSpan="3"
+			Label="@[Purchaser]" Value="{Bind Document.Agent}" ListSize="600,200"
+				CreateNewCommand="{BindCmd Execute, CommandName='createNewCustomer'}"
+				Delegate="fetchCustomers" DisplayProperty="Name">
+			<Selector.ItemsPanel>
+				<DataGrid Hover="True" GridLines="Vertical" Striped="True" FixedHeader="True" >
+					<DataGridColumn Header="Id" Content="{Bind Id}" Fit="True" Wrap="NoWrap" Align="Right"/>
+					<DataGridColumn Header="Name" Content="{Bind Name}"/>
+					<DataGridColumn Header="Name2" Content="{Bind Name}"/>
+				</DataGrid>
+			</Selector.ItemsPanel>
+			<Selector.AddOns>
+				<Hyperlink Icon="Search" Tip="Выберите покупателя" Command="{BindCmd Dialog, Action=Browse, Argument={Bind Document.Agent}, Url='/Agent/BrowseCustomer'}"/>
+			</Selector.AddOns>
+		</Selector>
+		<Block Grid.Row="5" Grid.ColSpan="4">
 			<Toolbar Style="Transparent">
 				<Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>
 			</Toolbar>

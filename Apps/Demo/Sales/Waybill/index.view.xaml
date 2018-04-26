@@ -33,7 +33,7 @@
 		</Toolbar>
 	</Page.Toolbar>
 	<Page.CollectionView>
-		<CollectionView ItemsSource="{Bind Documents}" RunAt="ServerUrl">
+		<CollectionView ItemsSource="{Bind Documents}" RunAt="Client" FilterDelegate="filter">
 			<CollectionView.Filter>
 				<FilterDescription>
 					<FilterItem Property="Agent" DataType="Object" />

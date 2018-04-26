@@ -1472,7 +1472,7 @@ create procedure a2demo.[Waybill.Index]
 	@TenantId int = null,
 	@UserId bigint,
 	@Offset int = 0,
-	@PageSize int = 20,
+	@PageSize int = 1024,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
 	@Agent bigint = null
