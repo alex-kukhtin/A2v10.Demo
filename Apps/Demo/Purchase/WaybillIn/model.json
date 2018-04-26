@@ -1,22 +1,28 @@
 ﻿{
-  "schema": "a2demo",
-  "model": "WaybillIn",
-  "actions": {
-    "index": {
-      "index": true,
-      "template": "index.template",
-      "view": "index.view"
-    },
-    "edit": {
-      "model": "Document",
-      "view": "waybillin.view",
-      "template": "waybillin.template"
-    }
-  },
-  "reports": {
-    "waybillIn": {
-      "report": "waybillIn",
-      "model": "Document"
-    }
-  }
+	"schema": "a2demo",
+	"model": "WaybillIn",
+	"actions": {
+		"index": {
+			"index": true,
+			"template": "index.template",
+			"view": "index.view"
+		},
+		"edit": {
+			"model": "Document",
+			"view": "waybillin.view",
+			"template": "waybillin.template"
+		},
+		"copy": {
+			"copy": true,
+			"model": "Document",
+			"view": "waybillin.view",
+			"template": "waybillin.template"
+		}
+	},
+	"reports": {
+		"waybillIn": {
+			"report": "waybillIn",
+			"model": "Document"
+		}
+	}
 }

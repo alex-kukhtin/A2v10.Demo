@@ -46,8 +46,9 @@ function findArticle(entity) {
 function documentCreate(doc, kind) {
     const vm = doc.$vm;
     doc.Date = du.today();
-    doc.Kind = kind;
-    doc.Rows.$append();
+	doc.Kind = kind;
+	if (doc.Rows.$isEmpty)
+		doc.Rows.$append();
     const dat = { Id: doc.Id, Kind: doc.Kind };
     vm.$invoke("nextDocNo", dat, '/Document').then(r => doc.No = r.Result.DocNo);
 }

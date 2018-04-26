@@ -569,6 +569,59 @@ begin
 end
 go
 ------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.Copy')
+	drop procedure a2demo.[Document.Copy]
+go
+------------------------------------------------
+create procedure a2demo.[Document.Copy]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id bigint = null,
+	@Kind nvarchar(255) = null
+as
+begin
+	set nocount on;
+
+	select [Document!TDocument!Object] = null, [Id!!Id] = cast(0 as bigint), Kind, [Date], [No], [Sum], Tag, d.Memo,
+		[Agent!TAgent!RefId] = Agent, [DepFrom!TAgent!RefId] = DepFrom, [DepTo!TAgent!RefId] = DepTo,
+		Done,
+		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified,
+		[Rows!TRow!Array] = null,
+		[Shipment!TDocLink!Array] = null,
+		[ParentDoc!TDocParent!RefId] = Parent
+	from a2demo.Documents d 
+	where d.Id=@Id;
+
+	select [!TRow!Array] = null, [Id!!Id] = cast(0 as bigint), [!TDocument.Rows!ParentId] = cast(0 as bigint), [RowNo!!RowNumber] = RowNo,
+		[Entity!TEntity!RefId] = Entity, Qty, Price, [Sum] 
+	from a2demo.DocDetails where Document = @Id
+	order by RowNo;
+
+	select [!TAgent!Map] = null, [Id!!Id] = a.Id,  [Name!!Name] = a.[Name], a.Code 
+	from a2demo.Agents a 
+		inner join a2demo.Documents d on a.Id in (d.Agent, d.DepFrom, d.DepTo)
+	where d.Id=@Id;
+
+	select [!TUser!Map] = null, [Id!!Id] = u.Id,  [Name!!Name] = isnull(u.PersonName, u.UserName)
+	from a2security.ViewUsers u
+		inner join a2demo.Documents d on u.Id in (d.UserCreated, d.UserModified)
+	where 0 <> 0;
+
+	select [!TEntity!Map] = null, [Id!!Id] = e.Id, [Name!!Name] = e.[Name], e.Article, e.[Image],
+		[Unit.Id!TUnit!Id] = e.Unit, [Unit.Short!TUnit!Name] = u.[Short]
+	from a2demo.Entities e
+		inner join a2demo.DocDetails dd on e.Id = dd.Entity
+		left join a2demo.Units u on e.Unit = u.Id
+	where dd.Document = @Id;
+
+	select [Warehouses!TAgent!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+	from a2demo.Agents where Kind=N'Warehouse';
+
+	select [!$System!] = null, [!!Copy] = 1
+	from a2demo.Documents where Id=@Id;
+end
+go
+------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Document.Report')
 	drop procedure a2demo.[Document.Report]
 go
@@ -951,6 +1004,44 @@ begin
 	from a2demo.Agents where Id=@Id and Void=0;
 
 	select [!TAddress!Object] = null, [Id!!Id] = Id, [!TAgent.Address!ParentId] = Agent,
+		Country, City, Street, Build, Appt 
+	from a2demo.Addresses where Agent = @Id;
+
+	select [Countries!TCountry!Array] = null, [Code!!Id] = Code, [Name!!Name] = [Name], [Cities!TCity!LazyArray] = null
+	from a2demo.Countries;
+
+	-- we need type declaration for City
+	select [!TCity!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Streets!TStreet!LazyArray] = null
+	from a2demo.Cities where 0 <> 0; 
+
+	-- we need type declaration for Street
+	select [!TStreet!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
+	from a2demo.Streets where 0 <> 0; 
+
+	select [Params!TParam!Object] = null, [Name] = @Name;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Copy')
+	drop procedure a2demo.[Agent.Copy]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Copy]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id bigint = null,
+	@Name nvarchar(255) = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select [Agent!TAgent!Object] = null, [Id!!Id] = cast(0 as bigint), [Name!!Name] = [Name], [Type], 
+		Code, Tag, Memo, Folder, ParentFolder=Parent, Phone,
+		[Address!TAddress!Object] = null,
+		DateCreated, DateModified
+	from a2demo.Agents where Id=@Id and Void=0;
+
+	select [!TAddress!Object] = null, [Id!!Id] = Id, [!TAgent.Address!ParentId] = cast(0 as bigint),
 		Country, City, Street, Build, Appt 
 	from a2demo.Addresses where Agent = @Id;
 

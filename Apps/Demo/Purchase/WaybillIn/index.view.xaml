@@ -5,6 +5,7 @@
       >
 	<Page.Resources>
 		<sys:String x:Key="OpenUrl">/Purchase/WaybillIn/Edit</sys:String>
+		<sys:String x:Key="CopyUrl">/Purchase/WaybillIn/Copy</sys:String>
 	</Page.Resources>
 	<Page.Toolbar>
 		<Toolbar>
@@ -64,12 +65,17 @@
 				DoubleClick="{BindCmd OpenSelected, Url={StaticResource OpenUrl}, Argument={Bind Documents}}">
 		<DataGridColumn Header="Код" Content="{Bind Id}" Align="Right" Fit="True"  Wrap="NoWrap"
 			Command="{BindCmd Open, Url={StaticResource OpenUrl}}"/>
-		<DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" />
+		<DataGridColumn Header="Дата" Content="{Bind Date, DataType=Date}" Align="Center" Fit="True" Wrap="NoWrap"/>
 		<DataGridColumn Header="Номер" Content="{Bind No}" Fit="True" Align="Right"/>
 		<DataGridColumn Header="Поставщик" Content="{Bind Agent.Name}" />
 		<DataGridColumn Header="Склад" Content="{Bind DepTo.Name}" />
-		<DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True"/>
+		<DataGridColumn Header="Сумма" Content="{Bind Sum, DataType=Currency}" Align="Right" Fit="True" Wrap="NoWrap"/>
 		<DataGridColumn Header="Примечание" Content="{Bind Memo}"/>
+		<DataGridColumn Fit="True">
+			<CommandBar Visibility="Active">
+				<Button Icon="Copy" Command="{BindCmd Create, Url={StaticResource CopyUrl}, Argument={Bind}}"/>
+			</CommandBar>
+		</DataGridColumn>
 		<DataGrid.RowDetails>
 			<DataGridRowDetails Activate="Cell">
 				<Button Content="Click me"/>
