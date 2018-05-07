@@ -22,7 +22,8 @@
 	"reports": {
 		"waybillIn": {
 			"report": "waybillIn",
-			"model": "Document"
+					"model": "Document",
+					"name": "Расходная накладная"
 		}
 	}
 }

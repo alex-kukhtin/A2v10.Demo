@@ -55,6 +55,7 @@
     <Content Include="Demo\Dashboard\Images\Test.png" />
     <Content Include="Demo\Document\common.js" />
     <Content Include="Demo\Entity\editGoods.template.js" />
+    <Content Include="Demo\Reports\report.template.js" />
     <Content Include="Demo\_localization\application.uk.txt" />
     <Content Include="Demo\Purchase\WaybillIn\index.template.js" />
     <Content Include="Demo\Purchase\WaybillIn\waybillin.template.js" />

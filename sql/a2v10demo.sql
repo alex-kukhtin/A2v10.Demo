@@ -438,7 +438,9 @@ create procedure a2demo.[Document.Index]
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
 	@Agent bigint = null,
-	@GroupBy nvarchar(255) = N''
+	@GroupBy nvarchar(255) = N'',
+	@From datetime = null,
+	@To datetime = null
 as
 begin
 	set nocount on;
@@ -502,7 +504,11 @@ begin
 		[!Documents!Offset] = @Offset,
 		[!Documents!GroupBy] = @GroupBy,
 		[!Documents.Agent.Id!Filter] = @Agent,
-		[!Documents.Agent.Name!Filter] = (select [Name] from a2demo.Agents where Id=@Agent);
+		[!Documents.Agent.Name!Filter] = (select [Name] from a2demo.Agents where Id=@Agent),
+		--[!Documents.From!Filter] = @From,
+		--[!Documents.To!Filter] = @To,
+		[!Documents.Period.From!Filter] = @From,
+		[!Documents.Period.To!Filter] = @To
 end
 go
 ------------------------------------------------
@@ -633,10 +639,12 @@ create procedure a2demo.[Document.Report]
 as
 begin
 	set nocount on;
+	--throw 60000, N'error', 0;
 	select [Document!TDocument!Object] = null, [Id!!Id] = d.Id, Kind, [Date], [No], [Sum], Tag, d.Memo,
 		[Agent!TAgent!RefId] = Agent, [DepFrom!TAgent!RefId] = DepFrom, [DepTo!TAgent!RefId] = DepTo,
 		DateCreated, DateModified, [UserCreated!TUser!RefId] = UserCreated, [UserModified!TUser!RefId] = UserModified,
-		[Rows!TRow!Array] = null
+		[Rows!TRow!Array] = null,
+		Logo = (select [Data] from a2demo.Attachments where Id=101)
 	from a2demo.Documents d 
 	where d.Id=@Id;
 
@@ -1529,11 +1537,15 @@ create procedure a2demo.[Invoice.Index]
 	@Offset int = 0,
 	@PageSize int = 16,
 	@Order nvarchar(255) = N'Id',
-	@Dir nvarchar(20) = N'desc'
+	@Dir nvarchar(20) = N'desc',
+	@From datetime = null,
+	@To datetime = null
+	--@Period nvarchar(255) = null
 as
 begin
 	set nocount on;
-	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Invoice', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir;
+	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Invoice', @Offset=@Offset, @PageSize=@PageSize, @Order=@Order, 
+		@Dir=@Dir, @From = @From, @To=@To;
 end
 go
 ------------------------------------------------
@@ -1865,13 +1877,22 @@ go
 create procedure a2demo.[Invoice.Registry.Load]
 	@TenantId int = null,
 	@UserId bigint,
-	@Id bigint = null
+	@Id bigint = null,
+	@Agent bigint = null,
+	@From datetime = null,
+	@To datetime = null
 as
 begin
 	set nocount on;
 	select [ReportData!TData!Array] = null, [Id!!Id] = Id, [Date], [No], [Sum], [Memo], DateCreated, DateModified
-	from a2demo.Documents where Kind=N'Invoice' and Agent=@Id
+	from a2demo.Documents where Agent in (@Agent)
 	order by [Date] desc;
+
+	select [Query!TQuery!Object] = null,
+		[Period.From!TPeriod] = @From,
+		[Period.To!TPeriod] = @To,
+		[Agent.Id!TAgent!Id] = @Agent,
+		[Agent.Name!TAgent!Name] = (select top(1) [Name] from a2demo.Agents where Id in (@Agent));
 end
 go
 ------------------------------------------------

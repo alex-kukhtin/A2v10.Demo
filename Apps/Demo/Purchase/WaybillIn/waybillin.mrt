@@ -112,12 +112,13 @@
           </DepTo>
         </BusinessObjects>
         <Category />
-        <Columns isList="true" count="5">
+        <Columns isList="true" count="6">
           <value>Sum,System.Decimal</value>
           <value>Date,System.DateTime</value>
           <value>Id,System.Int64</value>
           <value>No,System.Int32</value>
           <value>DeliverySum,System.Decimal</value>
+          <value>Logo,System.Drawing.Image</value>
         </Columns>
         <Dictionary isRef="1" />
         <Guid>4b7db458dbc84bc99c79f6e641070be7</Guid>
@@ -128,6 +129,7 @@
     <DataSources isList="true" count="0" />
     <Relations isList="true" count="0" />
     <Report isRef="0" />
+    <Resources isList="true" count="0" />
     <Variables isList="true" count="0" />
   </Dictionary>
   <EngineVersion>EngineV2</EngineVersion>
@@ -826,8 +828,8 @@
         </DetailsFooter>
         <ReportSummary Ref="61" type="ReportSummaryBand" isKey="true">
           <Brush>Transparent</Brush>
-          <ClientRectangle>0,18,20,2.1</ClientRectangle>
-          <Components isList="true" count="2">
+          <ClientRectangle>0,18,20,5.1</ClientRectangle>
+          <Components isList="true" count="4">
             <Text41 Ref="62" type="Text" isKey="true">
               <Brush>Transparent</Brush>
               <ClientRectangle>0,0.8,1.8,0.6</ClientRectangle>
@@ -839,21 +841,115 @@
               <Name>Text41</Name>
               <Page isRef="11" />
               <Parent isRef="61" />
-              <Text>Виписав:</Text>
+              <Text>Виписав2:</Text>
               <TextBrush>Gray</TextBrush>
               <Type>Expression</Type>
               <VertAlignment>Center</VertAlignment>
             </Text41>
-            <HorizontalLinePrimitive7 Ref="63" type="HorizontalLinePrimitive" isKey="true">
+            <Image1 Ref="63" type="Image" isKey="true">
+              <Brush>Transparent</Brush>
+              <ClientRectangle>10.8,2.6,2.4,2</ClientRectangle>
+              <Conditions isList="true" count="0" />
+              <ImageBytes>iVBORw0KGgoAAAANSUhEUgAAAMgAAACsCAYAAAA+PePSAAAAAXNSR0IArs4c6QAAAARnQU1BAACx
+jwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVh
+ZHlxyWU8AAADJmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78i
+IGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9i
+ZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxMTEgNzkuMTU4MzI1LCAy
+MDE1LzA5LzEwLTAxOjEwOjIwICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93
+d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJk
+ZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5z
+OnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdFJlZj0iaHR0
+cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlUmVmIyIgeG1wOkNyZWF0b3JU
+b29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxNSAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9
+InhtcC5paWQ6NURCNDk1NzNBNDk0MTFFNTk3RTVEMUNFRkJCMTEyODciIHhtcE1NOkRvY3VtZW50
+SUQ9InhtcC5kaWQ6NURCNDk1NzRBNDk0MTFFNTk3RTVEMUNFRkJCMTEyODciPiA8eG1wTU06RGVy
+aXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1REI0OTU3MUE0OTQxMUU1OTdFNUQx
+Q0VGQkIxMTI4NyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1REI0OTU3MkE0OTQxMUU1OTdF
+NUQxQ0VGQkIxMTI4NyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0
+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
+RK5CYII=</ImageBytes>
+              <Margins>0,0,0,0</Margins>
+              <Name>Image1</Name>
+              <Page isRef="11" />
+              <Parent isRef="61" />
+              <Stretch>True</Stretch>
+            </Image1>
+            <Image2 Ref="64" type="Image" isKey="true">
+              <AspectRatio>True</AspectRatio>
+              <Border>All;Black;1;Solid;False;4;Black</Border>
+              <Brush>Transparent</Brush>
+              <ClientRectangle>1.4,1.8,5,3.2</ClientRectangle>
+              <Conditions isList="true" count="0" />
+              <DataColumn>Document.Logo</DataColumn>
+              <HorAlignment>Center</HorAlignment>
+              <Margins>0,0,0,0</Margins>
+              <Name>Image2</Name>
+              <Page isRef="11" />
+              <Parent isRef="61" />
+              <Smoothing>False</Smoothing>
+              <Stretch>True</Stretch>
+              <VertAlignment>Center</VertAlignment>
+            </Image2>
+            <HorizontalLinePrimitive7 Ref="65" type="HorizontalLinePrimitive" isKey="true">
               <ClientRectangle>1.8,1.4,6.4,0.0254</ClientRectangle>
               <Color>Gray</Color>
-              <EndCap Ref="64" type="Cap" isKey="true">
+              <EndCap Ref="66" type="Cap" isKey="true">
                 <Color>Black</Color>
               </EndCap>
               <Name>HorizontalLinePrimitive7</Name>
               <Page isRef="11" />
               <Parent isRef="61" />
-              <StartCap Ref="65" type="Cap" isKey="true">
+              <StartCap Ref="67" type="Cap" isKey="true">
                 <Color>Black</Color>
               </StartCap>
             </HorizontalLinePrimitive7>
@@ -872,13 +968,13 @@
       <PageWidth>21</PageWidth>
       <PaperSize>A4</PaperSize>
       <Report isRef="0" />
-      <Watermark Ref="66" type="Stimulsoft.Report.Components.StiWatermark" isKey="true">
+      <Watermark Ref="68" type="Stimulsoft.Report.Components.StiWatermark" isKey="true">
         <Font>Arial,100</Font>
         <TextBrush>[50:0:0:0]</TextBrush>
       </Watermark>
     </Page1>
   </Pages>
-  <PrinterSettings Ref="67" type="Stimulsoft.Report.Print.StiPrinterSettings" isKey="true" />
+  <PrinterSettings Ref="69" type="Stimulsoft.Report.Print.StiPrinterSettings" isKey="true" />
   <ReferencedAssemblies isList="true" count="8">
     <value>System.Dll</value>
     <value>System.Drawing.Dll</value>
@@ -890,13 +986,13 @@
     <value>Stimulsoft.Report.Dll</value>
   </ReferencedAssemblies>
   <ReportAlias>Report</ReportAlias>
-  <ReportChanged>1/13/2018 11:13:27 PM</ReportChanged>
+  <ReportChanged>5/3/2018 12:49:10 PM</ReportChanged>
   <ReportCreated>2/1/2014 7:58:43 AM</ReportCreated>
-  <ReportFile>C:\inetpub\wwwroot\A2v10.Demo\Apps\Demo\Purchase\WaybillIn\waybillin.mrt</ReportFile>
-  <ReportGuid>62ca4b31115f4e6faca84cfb9a22e969</ReportGuid>
+  <ReportFile>C:\Git\A2v10.Demo\Apps\Demo\Purchase\WaybillIn\waybillin.mrt</ReportFile>
+  <ReportGuid>ab3a7d6750e241ca8005f690000a3266</ReportGuid>
   <ReportName>Report</ReportName>
   <ReportUnit>Centimeters</ReportUnit>
-  <ReportVersion>2016.1.0</ReportVersion>
+  <ReportVersion>2018.2.2.0</ReportVersion>
   <Script>using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -923,7 +1019,7 @@ namespace Reports
 </Script>
   <ScriptLanguage>CSharp</ScriptLanguage>
   <Styles isList="true" count="11">
-    <Normal Ref="68" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Normal Ref="70" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseBorderFormatting>False</AllowUseBorderFormatting>
       <AllowUseBorderSides>False</AllowUseBorderSides>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
@@ -935,7 +1031,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Center</VertAlignment>
     </Normal>
-    <Total_x0020_left Ref="69" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Total_x0020_left Ref="71" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
       <Border>All;DimGray;1;Solid;False;4;Black</Border>
       <Brush>Transparent</Brush>
@@ -944,7 +1040,7 @@ namespace Reports
       <Name>Total left</Name>
       <TextBrush>Black</TextBrush>
     </Total_x0020_left>
-    <Title Ref="70" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Title Ref="72" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseBorderFormatting>False</AllowUseBorderFormatting>
       <AllowUseBorderSides>False</AllowUseBorderSides>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
@@ -955,7 +1051,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Bottom</VertAlignment>
     </Title>
-    <Label Ref="71" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Label Ref="73" type="Stimulsoft.Report.StiStyle" isKey="true">
       <Brush>Transparent</Brush>
       <Conditions isList="true" count="0" />
       <Font>Segoe UI,9.75,Regular,Point,False,204</Font>
@@ -963,21 +1059,21 @@ namespace Reports
       <TextBrush>Gray</TextBrush>
       <VertAlignment>Center</VertAlignment>
     </Label>
-    <Small Ref="72" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Small Ref="74" type="Stimulsoft.Report.StiStyle" isKey="true">
       <Brush>Transparent</Brush>
       <Conditions isList="true" count="0" />
       <Font>Segoe UI,8.25,Regular,Point,False,204</Font>
       <Name>Small</Name>
       <TextBrush>Black</TextBrush>
     </Small>
-    <Bold Ref="73" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Bold Ref="75" type="Stimulsoft.Report.StiStyle" isKey="true">
       <Brush>Transparent</Brush>
       <Conditions isList="true" count="0" />
       <Font>Segoe UI,9.75,Bold,Point,False,204</Font>
       <Name>Bold</Name>
       <TextBrush>Black</TextBrush>
     </Bold>
-    <TitleBold Ref="74" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <TitleBold Ref="76" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseBorderFormatting>False</AllowUseBorderFormatting>
       <AllowUseBorderSides>False</AllowUseBorderSides>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
@@ -988,7 +1084,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Bottom</VertAlignment>
     </TitleBold>
-    <TableHeader_x0020_left Ref="75" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <TableHeader_x0020_left Ref="77" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseHorAlignment>True</AllowUseHorAlignment>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
       <Border>All;Gray;1;Solid;False;4;Black;True</Border>
@@ -999,7 +1095,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Center</VertAlignment>
     </TableHeader_x0020_left>
-    <TableHeader_x0020_right Ref="76" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <TableHeader_x0020_right Ref="78" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseHorAlignment>True</AllowUseHorAlignment>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
       <Border>All;Gray;1;Solid;False;4;Black;True</Border>
@@ -1011,7 +1107,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Center</VertAlignment>
     </TableHeader_x0020_right>
-    <Total_x0020_Right Ref="77" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <Total_x0020_Right Ref="79" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
       <Border>All;DimGray;1;Solid;False;4;Black</Border>
       <Brush>Transparent</Brush>
@@ -1022,7 +1118,7 @@ namespace Reports
       <TextBrush>Black</TextBrush>
       <VertAlignment>Center</VertAlignment>
     </Total_x0020_Right>
-    <TableHeader_x0020_center Ref="78" type="Stimulsoft.Report.StiStyle" isKey="true">
+    <TableHeader_x0020_center Ref="80" type="Stimulsoft.Report.StiStyle" isKey="true">
       <AllowUseHorAlignment>True</AllowUseHorAlignment>
       <AllowUseVertAlignment>True</AllowUseVertAlignment>
       <Border>All;Gray;1;Solid;False;4;Black;True</Border>
