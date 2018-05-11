@@ -2,7 +2,7 @@
 <Dialog xmlns="clr-namespace:A2v10.Xaml;assembly=A2v10.Xaml" 
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="Выбор покупателя" Padding="6">
+        Title="Выбор покупателя" Padding="6" Size="Large">
 	<Dialog.Buttons>
 		<Button Content="Выбрать" Command="{BindCmd Select, Argument={Bind Agents}}"/>
 		<Button Content="Отмена" Command="{BindCmd Close}"/>
@@ -19,6 +19,7 @@
 					<Hyperlink Icon="Search"/>
 				</TextBox.AddOns>
 			</TextBox>
+			<Button Icon="Reload" Tip="Обновить" Command="{BindCmd Reload}"/>
 
 			<Button Icon="Add" Toolbar.Align="Right" Tip="Создать покупателя" Command="{BindCmd Dialog, Action=Append, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Создать</Button>
 			<Button Icon="Edit" Toolbar.Align="Right" Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource OpenUrl}, Argument={Bind Agents}}">Изменить</Button>

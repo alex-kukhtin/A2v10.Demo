@@ -955,6 +955,7 @@ begin
 	declare @Asc nvarchar(10), @Desc nvarchar(10), @RowCount int;
 	set @Asc = N'asc'; set @Desc = N'desc';
 	set @Dir = isnull(@Dir, @Asc);
+	declare @RawFilter nvarchar(255) = @Fragment;
 
 	if @Fragment is not null
 		set @Fragment = N'%' + upper(@Fragment) + N'%';
@@ -983,12 +984,14 @@ begin
 	from T
 		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
 	order by [!!RowNumber];
+
 	-- system data
 	select [!$System!] = null, 
 		[!Agents!PageSize] = @PageSize, 
 		[!Agents!SortOrder] = @Order, 
 		[!Agents!SortDir] = @Dir,
-		[!Agents!Offset] = @Offset
+		[!Agents!Offset] = @Offset,
+		[!Agents.Fragment!Filter] = @RawFilter;
 end
 go
 ------------------------------------------------
@@ -1538,8 +1541,8 @@ create procedure a2demo.[Invoice.Index]
 	@PageSize int = 16,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
-	@From datetime = null,
-	@To datetime = null
+	@From datetime = N'20180509',
+	@To datetime = N'20180501'
 	--@Period nvarchar(255) = null
 as
 begin
