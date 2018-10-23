@@ -50,7 +50,7 @@
 	<Grid Columns="12rem, 12rem, 150, 1*">
 		<Header Grid.ColSpan="4" Badge="{Bind Document.Id}">Счет покупателю</Header>
 		<DatePicker Grid.Row="2" Label="Дата" Value="{Bind Document.Date}"/>
-		<TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right"/>
+		<TextBox Grid.Row="2" Label="Номер" Value="{Bind Document.No}" Align="Right" Bold="True"/>
 		<Static Grid.Row="2" Grid.Col="3" Label="Код" Value="{Bind Document.Id}" Align="Right"/>
 		<!--
 		-->

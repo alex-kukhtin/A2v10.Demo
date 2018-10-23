@@ -43,7 +43,7 @@
 				<Button Icon="Add" Content="Добавить строку" Command="{BindCmd Append, Argument={Bind Document.Rows}}"/>
 			</Toolbar>
 			<Table ItemsSource="{Bind Document.Rows}"
-                    Width="100%" GridLines="Both" Border="True" Background="Paper"
+                    Width="100%" GridLines="Both" Background="Paper"
                     Columns="Fit,100,Auto,Fit,100,100,100,Fit">
 				<Table.Header>
 					<TableRow>

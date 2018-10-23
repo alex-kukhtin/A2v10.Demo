@@ -437,8 +437,8 @@ create procedure a2demo.[Document.Index]
 	@PageSize int = 20,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
+	@Group nvarchar(255) = null,
 	@Agent bigint = null,
-	@GroupBy nvarchar(255) = N'',
 	@From datetime = null,
 	@To datetime = null
 as
@@ -502,7 +502,7 @@ begin
 		[!Documents!SortOrder] = @Order, 
 		[!Documents!SortDir] = @Dir,
 		[!Documents!Offset] = @Offset,
-		[!Documents!GroupBy] = @GroupBy,
+		[!Documents!GroupBy] = @Group,
 		[!Documents.Agent.Id!Filter] = @Agent,
 		[!Documents.Agent.Name!Filter] = (select [Name] from a2demo.Agents where Id=@Agent),
 		--[!Documents.From!Filter] = @From,
@@ -1001,7 +1001,7 @@ go
 ------------------------------------------------
 create procedure a2demo.[Agent.Load]
 	@TenantId int = null,
-	@UserId bigint,
+	@UserId bigint = null,
 	@Id bigint = null,
 	@Name nvarchar(255) = null
 as
@@ -1315,6 +1315,7 @@ begin
 		[!Entities!SortOrder] = @Order, 
 		[!Entities!SortDir] = @Dir,
 		[!Entities!Offset] = @Offset,
+		[!Entities!HasRows] = case when exists(select * from a2demo.Entities where Kind=@Kind) then 1 else 0 end,
 		[!Entities.Fragment!Filter] = @InitFragment
 end
 go
@@ -1581,12 +1582,13 @@ create procedure a2demo.[Waybill.Index]
 	@PageSize int = 1024,
 	@Order nvarchar(255) = N'Id',
 	@Dir nvarchar(20) = N'desc',
+	@Group nvarchar(20) = null,
 	@Agent bigint = null
 as
 begin
 	set nocount on;
 	exec a2demo.[Document.Index] @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Waybill', @Offset=@Offset, @PageSize=@PageSize, 
-		@Order=@Order, @Dir=@Dir, @Agent = @Agent;
+		@Order=@Order, @Dir=@Dir, @Agent = @Agent, @Group = @Group;
 end
 go
 ------------------------------------------------
@@ -1852,7 +1854,7 @@ create procedure a2demo.[Goods.Index]
 as
 begin
 	set nocount on;
-	exec a2demo.[Entity.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Goods', 
+	exec a2demo.[Entity.Index]  @TenantId=@TenantId, @UserId=@UserId, @Kind=N'Goods2', 
 		@Offset=@Offset, @PageSize=@PageSize, @Order=@Order, @Dir=@Dir,
 		@Fragment = @Fragment;
 end
@@ -1963,7 +1965,8 @@ begin
 		(61, 30,  N'Счета',		  N'invoice',    N'file', 10, null),
 		(62, 30,  N'Накладные',	  N'waybill',    N'file', 20, null),
 		(63, 30,  N'Покупатели',  N'customer',   N'user', 30, null),
-		(64, 30,  N'Справочники', N'catalog',    N'list', 40, null)
+		(64, 30,  N'Справочники', N'catalog',    N'list', 40, null),
+		(70, 10,   N'Inbox (2)',       N'inbox',      N'workflow1', 50, null)
 	merge a2ui.Menu as target
 	using @menu as source
 	on target.Id=source.id and target.Id >= 1 and target.Id < 200
@@ -1974,6 +1977,7 @@ begin
 			target.[Url] = source.[url],
 			target.[Icon] = source.icon,
 			target.[Order] = source.[order],
+			target.Parent = source.p0,
 			target.Help = source.help
 	when not matched by target then
 		insert(Id, Parent, [Name], [Url], Icon, [Order], Help) values (id, p0, [name], [url], icon, [order], help)
@@ -2063,6 +2067,135 @@ begin
 		values 
 		(@id, N'ул. Крещатик'),
 		(@id, N'ул. Б. Васильковская')
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'TestXml.Report')
+	drop procedure a2demo.[TestXml.Report]
+go
+------------------------------------------------
+create procedure a2demo.[TestXml.Report]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id bigint = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select top (1) [Report!TReport!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Memo, [Url], Icon
+	from a2demo.Catalogs 
+	order by Id;
+
+	select [DECLAR!!Json] = 
+N'{
+	"DECLARHEAD": {
+		"TIN":"112233",
+		"C_DOC": "F01",
+		"C_DOC_SUB": "033",
+		"C_DOC_VER" : 6,
+		"C_DOC_TYPE": 7,
+		"C_DOC_CNT": 0,
+		"C_REG": "223344",
+		"C_RAJ": "223344"
+	}
+}';
+
+	select [Params!TParam!Object] = null, [Name] = N'newreport';
+end
+go
+
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'ConfirmPhone.Load')
+	drop procedure a2demo.[ConfirmPhone.Load]
+go
+------------------------------------------------
+create procedure a2demo.[ConfirmPhone.Load]
+	@TenantId int = null,
+	@UserId bigint
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select [User!TUser!Object] = null, [Id!!Id] = Id, PhoneNumber = PhoneNumber, VerifyCode = cast(null as nvarchar(255))
+	from a2security.Users
+	where Id=@UserId
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Inbox.Index')
+	drop procedure a2demo.[Inbox.Index]
+go
+------------------------------------------------
+create procedure a2demo.[Inbox.Index]
+	@TenantId int = null,
+	@UserId bigint,
+	@Offset int = 0,
+	@PageSize int = 20,
+	@Order nvarchar(255) = N'Id',
+	@Dir nvarchar(20) = N'desc',
+	@Group nvarchar(255) = null
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+
+	declare @Asc nvarchar(10), @Desc nvarchar(10), @RowCount int;
+	set @Asc = N'asc'; set @Desc = N'desc';
+	set @Dir = isnull(@Dir, @Asc);
+
+	-- list of inbox
+
+	with T([Id!!Id], [ProcessId], [Bookmark], [Action], [For], [ForId], [Text], DateCreated,
+		[!!RowNumber])
+	as(
+		select i.Id, ProcessId, Bookmark, [Action], [For], [ForId], [Text], 
+			i.DateCreated,
+			[!!RowNumber] = row_number() over (
+			 order by
+				case when @Order=N'Id' and @Dir = @Asc then i.Id end asc,
+				case when @Order=N'Id' and @Dir = @Desc  then i.Id end desc,
+				case when @Order=N'Bookmark' and @Dir = @Asc then i.Bookmark end asc,
+				case when @Order=N'Bookmark' and @Dir = @Desc  then i.Bookmark end desc
+			)
+		from a2workflow.Inbox i
+		where i.Void = 0
+	)
+	select [Inbox!TInbox!Array]=null, *,
+		[!!RowCount] = (select count(1) from T)
+	into #tmp
+	from T
+		where [!!RowNumber] > @Offset and [!!RowNumber] <= @Offset + @PageSize
+
+	select * from #tmp
+	order by [!!RowNumber];
+
+	select [!$System!] = null, 
+		[!Inbox!PageSize] = @PageSize, 
+		[!Inbox!SortOrder] = @Order, 
+		[!Inbox!SortDir] = @Dir,
+		[!Inbox!Offset] = @Offset,
+		[!Inbox!GroupBy] = @Group
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Inbox.Load')
+	drop procedure a2demo.[Inbox.Load]
+go
+------------------------------------------------
+create procedure a2demo.[Inbox.Load]
+	@TenantId int = null,
+	@UserId bigint,
+	@Id bigint = 0
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+
+	select [Inbox!TInbox!Object]=null, [Id!!Id] = i.Id, [Text], [Bookmark], [Action] = N'sales/waybill/edit', i.DateCreated,
+		Model = N'Document', p.ModelId, p.[Schema], [Command] = 'edit'
+	from a2workflow.Inbox i
+		inner join a2workflow.Processes p on i.ProcessId = p.Id
+	where i.Id = @Id;
 end
 go
 ------------------------------------------------
