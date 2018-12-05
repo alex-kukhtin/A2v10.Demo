@@ -482,7 +482,7 @@ begin
 			left join a2demo.Agents t on d.DepTo = t.Id
 		where d.Kind=@Kind and (@Agent is null or d.Agent = @Agent)
 	)
-	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null, 
+	select [Documents!TDocument!Array]=null, *, [Links!TDocLink!Array] = null,  [Attachments!TAttachment!Array] = null,
 		[!!RowCount] = (select count(1) from T)
 	into #tmp
 	from T
@@ -493,6 +493,9 @@ begin
 
 	select [!TDocLink!Array] = null, [Id!!Id] = Id, [!TDocument.Links!ParentId] = Parent, Kind, [Date], [No], [Sum]
 	from a2demo.Documents where Parent in (select [Id!!Id] from #tmp)
+
+	select [!TAttachment!Array] = null, [Id!!Id] = Id, [!TDocument.Attachments!ParentId] = Document 
+	from a2demo.DocAttachments where Document in (select [Id!!Id] from #tmp);
 
 	select [!TDocParent!Map] = null, [Id!!Id] = Id, Kind, [Date], [No], [Sum]
 	from a2demo.Documents where Id in (select [ParentDoc!TDocParent!RefId] from #tmp);
@@ -669,6 +672,51 @@ begin
 		inner join a2demo.DocDetails dd on e.Id = dd.Entity
 		left join a2demo.Units u on e.Unit = u.Id
 	where dd.Document = @Id;
+end
+go
+------------------------------------------------
+if not exists(select * from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA=N'a2demo' and TABLE_NAME=N'DocAttachments')
+begin
+	create table a2demo.DocAttachments
+	(
+		Id bigint not null identity(100, 1) constraint PK_DocAttachments primary key,
+		Attachment	bigint not null
+			constraint FK_DocAttachments_Attachment_Attachments foreign key references a2demo.Attachments(Id)
+			on delete cascade,				
+		Document bigint not null
+			constraint FK_DocAttachments_Document_Documents foreign key references a2demo.Documents(Id) 
+			on delete cascade,
+	);
+end
+go
+------------------------------------------------
+create or alter procedure a2demo.[Document.SaveAttachment]
+@UserId bigint,
+@TenantId int = null,
+@Id bigint,
+@Name nvarchar(255) = null,
+@Mime nvarchar(255) = null,
+@Stream varbinary(max),
+@RetId bigint output
+as
+begin
+	set nocount on;
+
+	declare @output table (Id bigint);
+
+	insert into a2demo.Attachments ([Name], Mime, [Data], UserId)
+		output inserted.Id into @output(Id)
+		values (@Name, @Mime, @Stream, @UserId);
+
+	select top(1) @RetId = Id from @output;
+
+	delete from @output;
+
+	insert into a2demo.DocAttachments (Document, Attachment)
+		output inserted.Id into @output(Id)
+		values (@Id, @RetId);
+
+	select top(1) @RetId = Id from @output;
 end
 go
 ------------------------------------------------
@@ -2196,6 +2244,26 @@ begin
 	from a2workflow.Inbox i
 		inner join a2workflow.Processes p on i.ProcessId = p.Id
 	where i.Id = @Id;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Waybill.Attachment.Load')
+	drop procedure a2demo.[Waybill.Attachment.Load]
+go
+------------------------------------------------
+create procedure a2demo.[Waybill.Attachment.Load]
+	@TenantId int = null,
+	@UserId bigint,
+	@Key nvarchar(255) = null,
+	@Id bigint = 0
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+
+	select Mime, [Name], Stream = [Data] from 
+		a2demo.Attachments a inner join a2demo.DocAttachments da on da.Attachment = a.Id
+	where da.Id = @Id;
 end
 go
 ------------------------------------------------
