@@ -27,7 +27,7 @@
 			<Button Icon="Reload" Command="{BindCmd Reload}">Обновить</Button>
 			<Button Icon="EllipsisVertical" Toolbar.Align="Right" Tip="Дополнительные действия">
 				<Button.DropDown>
-					<DropDownMenu Direction="DownRight">
+					<DropDownMenu Direction="DownLeft">
 						<MenuItem Icon="Lock" Content="Изменить пароль" Command="{BindCmd Dialog, Action=EditSelected, Url={StaticResource PasswordUrl}, Argument={Bind Users}}"/>
 					</DropDownMenu>
 				</Button.DropDown>
