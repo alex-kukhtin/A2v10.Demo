@@ -1,6 +1,6 @@
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-/*20181105-7344*/
+/*20190323-7488*/
 /* services/eusign.js */
 
 app.modules['std:eusign'] = function () {
@@ -10,19 +10,34 @@ app.modules['std:eusign'] = function () {
 	const platform = require('std:platform');
 	const eventBus = require('std:eventBus');
 	const utils = require('std:utils');
+	const html = require('std:html');
 
 	const EUSIGN_URL = 'eusign';
 	return {
 		loadAttachment,
 		loadSignature,
+		loadSignedData,
 		readKey,
 		signData,
 		verifyData,
 		saveSignature,
 		getMessage,
+		findKeys,
 		beginRequest() { eventBus.$emit('beginRequest', EUSIGN_URL); },
 		endRequest() { eventBus.$emit('endRequest', EUSIGN_URL); }
 	};
+
+
+	function uploadData(data, filename) {
+		let objUrl = URL.createObjectURL(new Blob([data]));
+		let link = document.createElement('a');
+		link.href = objUrl;
+		document.body.appendChild(link); // FF!
+		link.download = filename;
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(objUrl);
+	}
 
 	function customOwnerInfo(ownerInfo, timeInfo) {
 		let rw = {
@@ -37,13 +52,65 @@ app.modules['std:eusign'] = function () {
 		return rw;
 	}
 
-	function readKey(pwd, file) {
+	function getOwnCertificateInfo(keyType, keyUsage) {
+		try {
+			for (let index = 0; ;index++) {
+				let info = euSign.EnumOwnCertificates(index);
+				if (!info) return null;
+				if (info.GetPublicKeyType() === keyType &&
+					(info.GetKeyUsageType() & keyUsage) === keyUsage) {
+					return info;
+				}
+			}
+		} catch (e) {
+			alert(e);
+		}
+		return null;
+	}
+
+	function getOwnCertificate(keyType, keyUsage) {
+		try {
+			let info = getOwnCertificateInfo(
+				keyType, keyUsage);
+			if (!info) return null;
+			return euSign.GetCertificate(
+				info.GetIssuer(), info.GetSerial());
+		} catch (e) {
+			alert(e);
+		}
+		return null;
+	}
+
+
+	function findKeys(file) {
+		return new Promise(function (resolve, reject) {
+			euSign.ReadFile(file, function (file) {
+				let container = new Uint8Array(file.data);
+				let arr = [];
+				for (let i = 0; i < 100; i++) {
+					try {
+						let alias = euSign.EnumJKSPrivateKeys(container, i);
+						if (!alias)
+							break;
+						arr.push(alias);
+					} catch (e) {
+						break;
+					}
+				}
+				resolve(arr);
+			}, function (err) {
+				reject(err);
+			});
+		});
+	}
+
+	function readKey(pwd, file, alias) {
 
 		eventBus.$emit('beginRequest', EUSIGN_URL);
 
 		return new Promise(function (resolve, reject) {
 
-			let addr = ['ca.ksystems.com.ua', 'masterkey.ua', 'acskidd.gov.ua'];
+			let addr = ['ca.ksystems.com.ua', 'masterkey.ua', 'acskidd.gov.ua', 'acsk.privatbank.ua', 'uakey.com.ua'];
 
 			function getPrivateKeyCertificatesByCMP(key, onSuccess) {
 				var keyInfo = euSign.GetKeyInfoBinary(key, pwd);
@@ -67,7 +134,22 @@ app.modules['std:eusign'] = function () {
 
 			setTimeout(() => {
 				euSign.ReadFile(file, function (file) {
-					readPrivateKey(file.file.name, new Uint8Array(file.data), pwd);
+					euSign.ResetPrivateKey();
+					let container = new Uint8Array(file.data);
+					if (alias) {
+						let jksKey = euSign.GetJKSPrivateKey(container, alias);
+						for (let i = 0; i < jksKey.GetCertificatesCount(); i++) {
+							euSign.SaveCertificate(jksKey.GetCertificate(i));
+						}
+						euSign.ReadPrivateKeyBinary(jksKey.GetPrivateKey(), pwd);
+						const ownerInfo = euSign.GetPrivateKeyOwnerInfo();
+						console.dir(ownerInfo);
+						let rw = customOwnerInfo(ownerInfo);
+						eventBus.$emit('endRequest', EUSIGN_URL);
+						resolve(rw);
+					} else {
+						readPrivateKey(file.file.name, container, pwd);
+					}
 				}, function (error) {
 					eventBus.$emit('endRequest', EUSIGN_URL);
 					reject(error);
@@ -82,7 +164,13 @@ app.modules['std:eusign'] = function () {
 	}
 
 	function loadAttachment(url, id) {
-		return loadRaw(url, id, 'raw');
+		let raw = loadRaw(url, id, 'raw');
+		let prev = loadRaw(url, id, 'prev');
+		return Promise.all([raw, prev]);
+	}
+
+	function loadSignedData(url, id) {
+		return loadRaw(url, id, 'prev');
 	}
 
 	function loadRaw(url, id, controller) {
@@ -108,15 +196,22 @@ app.modules['std:eusign'] = function () {
 		});
 	}
 
-	function signData(data) {
-		return euSign.SignData(data, false);
+	function signData(blobs) {
+		let cert = getOwnCertificate(EU_CERT_KEY_TYPE_DSTU4145, EU_KEY_USAGE_DIGITAL_SIGNATURE);
+		let data = blobs[0];
+		let cont = blobs[1];
+		let hash = euSign.HashData(data);
+		let signer = euSign.CreateSigner(hash);
+		if (!cont.length)
+			cont = euSign.CreateEmptySign(data);
+		let result = euSign.AppendSigner(signer, cert, cont);
+		let info = euSign.VerifyDataInternal(result);
+		return { data: result, ownerInfo: info };
 	}
 
-	function verifyData(data, sign) {
-		let verify = euSign.VerifyData(data, sign);
-		let ownerInfo = verify.GetOwnerInfo();
-		let timeInfo = verify.GetTimeInfo();
-		return customOwnerInfo(ownerInfo, timeInfo);
+	function verifyData(data) {
+		let verify = euSign.VerifyDataInternal(data);
+		return verify;
 	}
 
 	function getMessage(err) {
@@ -134,11 +229,14 @@ app.modules['std:eusign'] = function () {
 			let postUrl = `/attachment/sign/${prms.id}` + urltools.makeQueryString({ base: prms.base });
 			formData.append("file", new Blob([prms.signature]), "blob");
 			formData.append("kind", prms.kind || '');
-			if (prms.ownerInfo) {
-				formData.append("subjCN", prms.ownerInfo.subjCN);
-				formData.append("issuer", prms.ownerInfo.issuerCN);
-				formData.append("serial", prms.ownerInfo.serial);
-				formData.append("time", prms.ownerInfo.time.getTime());
+			if (prms.info) {
+				let ownerInfo = prms.info.ownerInfo;
+				let time = prms.info.timeInfo;
+				formData.append("subjCN", ownerInfo.GetSubjCN());
+				formData.append("issuer", ownerInfo.GetIssuerCN());
+				formData.append("serial", ownerInfo.GetSerial());
+				formData.append("title", ownerInfo.GetSubjTitle());
+				formData.append("time", time.GetTime().getTime());
 			}
 			http.upload(postUrl, formData, true).then(function (result) {
 				console.dir(result);
@@ -148,5 +246,4 @@ app.modules['std:eusign'] = function () {
 			});
 		});
 	}
-
 };

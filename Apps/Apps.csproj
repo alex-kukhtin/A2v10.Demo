@@ -96,9 +96,12 @@
     <None Include="Demo\Reports\model.json" />
     <None Include="Demo\Sales\Catalog\model.json" />
     <None Include="Demo\Sales\Customer\model.json" />
+    <None Include="Demo\Sales\Invoice\index.template.xlsx" />
+    <None Include="Demo\Sales\Invoice\Invoice.mrt" />
     <None Include="Demo\Sales\Invoice\model.json" />
     <None Include="Demo\Sales\Waybill\model.json" />
     <None Include="Demo\_less\app.less" />
+    <Content Include="tsconfig.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Admin\Identity\Group\browse.dialog.xaml">
@@ -243,6 +246,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="Demo\Sales\Invoice\invoice2.template.ts" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

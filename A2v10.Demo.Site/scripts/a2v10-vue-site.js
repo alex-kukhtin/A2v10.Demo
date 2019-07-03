@@ -1,6 +1,6 @@
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20180428-7171
+// 20190226-7444
 // app.js
 
 "use strict";
@@ -79,7 +79,7 @@ app.modules['std:locale'] = function () {
 		let elRect = el.getBoundingClientRect();
 		let pElem = el.parentElement;
 		while (pElem) {
-			if (pElem.offsetHeight <= pElem.scrollHeight)
+			if (pElem.offsetHeight < pElem.scrollHeight)
 				break;
 			pElem = pElem.parentElement;
 		}
@@ -135,9 +135,9 @@ app.modules['std:locale'] = function () {
 
 })();
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181203-7381
+// 20190414-7485
 // services/utils.js
 
 app.modules['std:utils'] = function () {
@@ -145,6 +145,7 @@ app.modules['std:utils'] = function () {
 	const locale = require('std:locale');
 	const platform = require('std:platform');
 	const dateLocale = locale.$Locale;
+	const numLocale = locale.$Locale;
 	const _2digit = '2-digit';
 
 	const dateOptsDate = { timeZone: 'UTC', year: 'numeric', month: _2digit, day: _2digit };
@@ -153,8 +154,10 @@ app.modules['std:utils'] = function () {
 	const formatDate = new Intl.DateTimeFormat(dateLocale, dateOptsDate).format;
 	const formatTime = new Intl.DateTimeFormat(dateLocale, dateOptsTime).format;
 
-	const currencyFormat = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true }).format;
-	const numberFormat = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 6, useGrouping: true }).format;
+	const currencyFormat = new Intl.NumberFormat(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true }).format;
+	const numberFormat = new Intl.NumberFormat(numLocale, { minimumFractionDigits: 0, maximumFractionDigits: 6, useGrouping: true }).format;
+
+	let numFormatCache = {};
 
 
 	return {
@@ -205,7 +208,12 @@ app.modules['std:utils'] = function () {
 			contains: textContains,
 			containsText: textContainsText,
 			sanitize,
-			splitPath
+			splitPath,
+			capitalize
+		},
+		currency: {
+			round: currencyRound,
+			format: currencyFormat
 		},
 		func: {
 			curry,
@@ -307,16 +315,15 @@ app.modules['std:utils'] = function () {
 		return r;
 	}
 
-	function evaluate(obj, path, dataType, hideZeros, skipFormat) {
+	function evaluate(obj, path, dataType, opts, skipFormat) {
 		let r = simpleEval(obj, path);
 		if (skipFormat) return r;
 		if (isDate(r))
-			return format(r, dataType, hideZeros);
+			return format(r, dataType);
 		else if (isObject(r))
 			return toJson(r);
-		else if (format)
-			return format(r, dataType, hideZeros);
-		return r;
+		else
+			return format(r, dataType, opts);
 	}
 
 	function pad2(num) {
@@ -336,7 +343,43 @@ app.modules['std:utils'] = function () {
 		return obj;
 	}
 
-	function format(obj, dataType, hideZeros) {
+	function formatNumber(num, format) {
+		if (!format)
+			return numberFormat(num);
+		if (numFormatCache[format])
+			return numFormatCache[format](num);
+		let re = /^([#][,\s])?(#*)?(0*)?\.?(0*)?(#*)?$/;
+		let fmt = format.match(re);
+		if (!fmt) {
+			console.error(`Invalid number format: '${format}'`);
+			return num;
+		}
+		function getlen(x) {
+			return x ? x.length : 0;
+		}
+
+		// 1-sep, 2-int part(#), 3-int part(0), 4-fract part (0), 5-fract part (#) 
+		let useGrp = !!fmt[1],
+			fih = getlen(fmt[2]), fi0 = getlen(fmt[3]),
+			fp0 = getlen(fmt[4]), fph = getlen(fmt[5]);
+
+		//console.dir(fmt);
+		//console.dir({ useGrp, fp0, fph, fi0, fih });
+
+		let formatFunc = Intl.NumberFormat(numLocale, {
+			minimumFractionDigits: fp0,
+			maximumFractionDigits: fp0 + fph,
+			minimumIntegerDigits: fi0,
+			useGrouping: useGrp
+		}).format;
+
+		numFormatCache[format] = formatFunc;
+
+		return formatFunc(num);
+	}
+
+	function format(obj, dataType, opts) {
+		opts = opts || {};
 		if (!dataType)
 			return obj;
 		if (!isDefined(obj))
@@ -351,6 +394,8 @@ app.modules['std:utils'] = function () {
 					return '';
 				return formatDate(obj) + ' ' + formatTime(obj);
 			case "Date":
+				if (isString(obj))
+					obj = string2Date(obj);
 				if (!isDate(obj)) {
 					console.error(`Invalid Date for utils.format (${obj})`);
 					return obj;
@@ -378,20 +423,25 @@ app.modules['std:utils'] = function () {
 				return obj.format('Date');
 			case "Currency":
 				if (!isNumber(obj)) {
-					console.error(`Invalid Currency for utils.format (${obj})`);
-					return obj;
+					obj = toNumber(obj);
+					//TODO:check console.error(`Invalid Currency for utils.format (${obj})`);
+					//return obj;
 				}
-				if (hideZeros && obj === 0)
+				if (opts.hideZeros && obj === 0)
 					return '';
+				if (opts.format)
+					return formatNumber(obj, opts.format);
 				return currencyFormat(obj);
 			case "Number":
 				if (!isNumber(obj)) {
-					console.error(`Invalid Number for utils.format (${obj})`);
-					return obj;
+					obj = toNumber(obj);
+					//TODO:check console.error(`Invalid Number for utils.format (${obj})`);
+					//return obj;
 				}
-				if (hideZeros && obj === 0)
+				if (opts.hideZeros && obj === 0)
 					return '';
-				return numberFormat(obj);
+
+				return formatNumber(obj, opts.format);
 			default:
 				console.error(`Invalid DataType for utils.format (${dataType})`);
 		}
@@ -454,18 +504,37 @@ app.modules['std:utils'] = function () {
 		return str;
 	}
 
+	function string2Date(str) {
+		try {
+			let dt = new Date(str);
+			dt.setHours(0, -dt.getTimezoneOffset(), 0, 0);
+			return dt;
+		} catch (err) {
+			return str;
+		}
+	}
+
 	function dateParse(str) {
 		str = str || '';
 		if (!str) return dateZero();
 		let today = dateToday();
-		let seg = str.split('.');
+		let seg = str.split(/[^\d]/).filter(x => x);
 		if (seg.length === 1) {
 			seg.push('' + (today.getMonth() + 1));
 			seg.push('' + today.getFullYear());
 		} else if (seg.length === 2) {
 			seg.push('' + today.getFullYear());
 		}
-		let td = new Date(+seg[2], +seg[1] - 1, +seg[0], 0, 0, 0, 0);
+		let normalizeYear = function (y) {
+			y = '' + y;
+			switch (y.length) {
+				case 2: y = '20' + y; break;
+				case 4: break;
+				default: y = today.getFullYear(); break;
+			}
+			return +y;
+		};
+		let td = new Date(+normalizeYear(seg[2]), +((seg[1] ? seg[1] : 1) - 1), +seg[0], 0, 0, 0, 0);
 		if (isNaN(td.getDate()))
 			return dateZero();
 		td.setHours(0, -td.getTimezoneOffset(), 0, 0);
@@ -592,6 +661,11 @@ app.modules['std:utils'] = function () {
 		};
 	}
 
+	function capitalize(text) {
+		if (!text) return '';
+		return text.charAt(0).toUpperCase() + text.slice(1);
+	}
+
 	function textContains(text, probe) {
 		if (!probe)
 			return true;
@@ -634,12 +708,26 @@ app.modules['std:utils'] = function () {
 			return fn(...args, ..._arg);
 		};
 	}
+
+	function currencyRound(n, digits) {
+		if (isNaN(n))
+			return Nan;
+		if (!isDefined(digits))
+			digits = 2;
+		let m = false;
+		if (n < 0) {
+			n = -n;
+			m = true;
+		}
+		// toFixed = avoid js rounding error
+		let r = Number(Math.round(n.toFixed(12) + `e${digits}`) + `e-${digits}`);
+		return m ? -r : r;
+	}
 };
 
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
-
-/*20180619-7227*/
+/*20190411-7483*/
 /* services/url.js */
 
 app.modules['std:url'] = function () {
@@ -661,7 +749,9 @@ app.modules['std:url'] = function () {
 		firstUrl: '',
 		encodeUrl: encodeURIComponent,
 		helpHref,
-		replaceSegment: replaceSegment
+		replaceSegment,
+		removeFirstSlash,
+		isNewPath
 	};
 
 	function normalize(elem) {
@@ -681,6 +771,11 @@ app.modules['std:url'] = function () {
 		return path;
 	}
 
+	function removeFirstSlash(url) {
+		if (url && url.startsWith && url.startsWith('/'))
+			return url.substring(1);
+		return url;
+	}
 	function combine(...args) {
 		return '/' + args.map(normalize).filter(x => !!x).join('/');
 	}
@@ -741,10 +836,17 @@ app.modules['std:url'] = function () {
 		let os = o1.split('/');
 		if (ns.length !== os.length)
 			return false;
-		if (os[os.length - 1] === 'new' && ns[ns.length - 1] !== 'new') {
+
+		function isNewPathArr(arr) {
+			let ai = arr[arr.length - 1];
+			return ai === 'new' || ai === '0';
+		}
+
+		if (isNewPathArr(os) && !isNewPathArr(ns)) {
 			if (ns.slice(0, ns.length - 1).join('/') === os.slice(0, os.length - 1).join('/'))
 				return true;
 		}
+
 		return false;
 	}
 
@@ -824,13 +926,33 @@ app.modules['std:url'] = function () {
 		alert('todo::replaceId');
 	}
 
+	function isDialogPath(url) {
+		return url.startsWith('/_dialog/');
+	}
+
 	function replaceSegment(url, id, action) {
 		let parts = url.split('/');
-		if (action) parts.pop();
-		if (id) parts.pop();
-		if (action) parts.push(action);
-		if (id) parts.push(id);
+		if (isDialogPath(url)) {
+			parts.pop();
+			if (id)
+				parts.push(id);
+		} else {
+			if (action) parts.pop();
+			if (id) parts.pop();
+			if (action) parts.push(action);
+			if (id) parts.push(id);
+		}
 		return parts.join('/');
+	}
+
+	function isNewPath(url) {
+		url = url.split('?')[0]; // first segment
+		if (!url) return false;
+		if (url.indexOf('/new') !== -1)
+			return true;
+		if (isDialogPath(url) && url.endsWith('/0'))
+			return true;
+		return false;
 	}
 };
 
@@ -839,9 +961,9 @@ app.modules['std:url'] = function () {
 
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181024-7328
+// 20190223-7441
 // services/period.js
 
 app.modules['std:period'] = function () {
@@ -971,16 +1093,28 @@ app.modules['std:period'] = function () {
 	};
 
 
-	function isPeriod(value) { return value instanceof TPeriod; }
-
+	
 	return {
 		isPeriod,
+		like: likePeriod,
 		constructor: TPeriod,
 		zero: zeroPeriod,
 		all: allDataPeriod,
 		create: createPeriod,
 		predefined: predefined
 	};
+
+	function isPeriod(value) { return value instanceof TPeriod; }
+
+	function likePeriod(obj) {
+		if (!obj)
+			return false;
+		if (Object.getOwnPropertyNames(obj).length !== 2)
+			return false;
+		if (obj.hasOwnProperty('From') && obj.hasOwnProperty('To'))
+			return true;
+		return false;
+	}
 
 	function zeroPeriod() {
 		return new TPeriod();
@@ -995,15 +1129,16 @@ app.modules['std:period'] = function () {
 			{ name: locale.$Today, key: 'today' },
 			{ name: locale.$Yesterday, key: 'yesterday' },
 			{ name: locale.$Last7Days, key: 'last7' },
-			{ name: locale.$Last30Days, key: 'last30' },
+			//{ name: locale.$Last30Days, key: 'last30' },
 			//{ name: locale.$MonthToDate, key: 'startMonth' },
 			{ name: locale.$CurrMonth, key: 'currMonth' },
 			{ name: locale.$PrevMonth, key: 'prevMonth' },
 			//{ name: locale.$QuartToDate, key: 'startQuart' },
 			{ name: locale.$CurrQuart, key: 'currQuart' },
 			{ name: locale.$PrevQuart, key: 'prevQuart' },
-			//{ name: locale.$YearToDate, key: 'startYear' }
-			{name: locale.$CurrYear, key: 'currYear'}
+			//{ name: locale.$YearToDate, key: 'startYear' },
+			{ name: locale.$CurrYear, key: 'currYear'},
+			{ name: locale.$PrevYear, key: 'prevYear' }
 		];
 		if (showAll) {
 			menu.push({ name: locale.$AllPeriodData, key: 'allData' });
@@ -1090,6 +1225,12 @@ app.modules['std:period'] = function () {
 					p.set(dy1, dy2);
 				}
 				break;
+			case 'prevYear': {
+				let dy1 = date.create(today.getFullYear() - 1, 1, 1);
+				let dy2 = date.create(today.getFullYear() - 1, 12, 31);
+				p.set(dy1, dy2);
+			}
+				break;
 			case 'allData':
 				// full period
 				p.set(date.minDate, date.maxDate);
@@ -1156,9 +1297,9 @@ app.modules['std:modelInfo'] = function () {
 };
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-/*20180821-7280*/
+/*20190307-7460*/
 /* services/mask.js */
 
 app.modules['std:mask'] = function () {
@@ -1440,7 +1581,12 @@ app.modules['std:mask'] = function () {
 		if (clearSelectionFull(e, this)) return;
 		let pos = getCaretPosition(this);
 		//console.dir(e.which);
-		switch (e.which) {
+		let char = e.which;
+		if (char === 229) {
+			// mobile fix
+			char = e.target.value.charAt(e.target.selectionStart - 1).charCodeAt();
+		}
+		switch (char) {
 			case 37: /* left */
 				setCaretPosition(this, pos - 1, 'l');
 				handled = true;
@@ -1512,9 +1658,122 @@ app.modules['std:mask'] = function () {
 	}
 };
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181125-7372
+// 20190405-7498
+/* services/html.js */
+
+app.modules['std:html'] = function () {
+
+	const frameId = "print-direct-frame";// todo: shared CONST
+
+	return {
+		getColumnsWidth,
+		getRowHeight,
+		downloadBlob,
+		downloadUrl,
+		printDirect,
+		removePrintFrame,
+		updateDocTitle
+	};
+
+	function getColumnsWidth(elem) {
+		let cols = elem.getElementsByTagName('col');
+		let cells = elem.querySelectorAll('tbody.col-shadow > tr > td');
+		let len = Math.min(cols.length, cells.length);
+		for (let i = 0; i < len; i++) {
+			let w = cells[i].offsetWidth;
+			cols[i].setAttribute('data-col-width', w);
+		}
+	}
+
+	function getRowHeight(elem) {
+		let rows = elem.getElementsByTagName('tr');
+		for (let r = 0; r < rows.length; r++) {
+			let h = rows[r].offsetHeight - 12; /* padding !!!*/
+			rows[r].setAttribute('data-row-height', h);
+		}
+	}
+
+	function downloadUrl(url) {
+		let link = document.createElement('a');
+		link.style = "display:none";
+		document.body.appendChild(link);
+		link.href = url;
+		link.setAttribute('download', '');
+		link.click();
+		document.body.removeChild(link);
+	}
+
+	function downloadBlob(blob, fileName, format) {
+		let objUrl = URL.createObjectURL(blob);
+		let link = document.createElement('a');
+		link.style = "display:none";
+		document.body.appendChild(link); // FF!
+		let downloadFile = fileName || 'file';
+		format = (format || '').toLowerCase();
+		if (format === 'excel')
+			downloadFile += '.xlsx';
+		else if (format === "pdf")
+			downloadFile += ".pdf";
+		link.download = downloadFile;
+		link.href = objUrl;
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(objUrl);
+	}
+
+	function printDirect(url) {
+
+		removePrintFrame();
+		let frame = document.createElement("iframe");
+		document.body.classList.add('waiting');
+		frame.id = frameId;
+		frame.style.cssText = "display:none;width:0;height:0;border:none;position:absolute;left:-10000,top:-100000";
+		document.body.appendChild(frame);
+		if (document.activeElement)
+			document.activeElement.blur();
+		//let emb = document.createElement('embed');
+		//emb.setAttribute('src', url);
+		//frame.appendChild(emb);
+		frame.setAttribute('src', url);
+
+
+		frame.onload = function (ev) {
+			let cw = frame.contentWindow;
+			if (cw.document.body) {
+				let finp = cw.document.createElement('input');
+				finp.setAttribute("id", "dummy-focus");
+				finp.cssText = "width:0;height:0;border:none;position:absolute;left:-10000,top:-100000";
+				cw.document.body.appendChild(finp);
+				finp.focus();
+				cw.document.body.removeChild(finp);
+			}
+			document.body.classList.remove('waiting');
+			cw.print();
+		};
+	}
+
+	function removePrintFrame() {
+		let frame = window.frames[frameId];
+		if (frame)
+			document.body.removeChild(frame);
+	}
+
+	function updateDocTitle(title) {
+		if (document.title === title)
+			return;
+		document.title = title;
+	}
+};
+
+
+
+
+
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
+
+// 20190221-7439
 /* services/http.js */
 
 app.modules['std:http'] = function () {
@@ -1531,6 +1790,15 @@ app.modules['std:http'] = function () {
 		upload: upload,
 		localpost
 	};
+
+	function blob2String(blob, callback) {
+		const fr = new FileReader();
+		fr.addEventListener('loadend', (e) => {
+			const text = fr.result;
+			callback(text);
+		});
+		fr.readAsText(blob);
+	}
 
 	function doRequest(method, url, data, raw) {
 		return new Promise(function (resolve, reject) {
@@ -1550,8 +1818,12 @@ app.modules['std:http'] = function () {
 					resolve(xhrResult);
 				}
 				else if (xhr.status === 255) {
-					if (raw)
-						reject(xhr.statusText); // response is blob!
+					if (raw) {
+						if (xhr.response instanceof Blob)
+							blob2String(xhr.response, (msg) => reject('server error: ' + msg));
+						else
+							reject(xhr.statusText); // response is blob!
+					}
 					else
 						reject(xhr.responseText || xhr.statusText);
 				}
@@ -1631,15 +1903,24 @@ app.modules['std:http'] = function () {
 						let s = rdoc.scripts[i];
 						if (s.type === 'text/javascript') {
 							let newScript = document.createElement("script");
-							newScript.text = s.text;
+							if (s.src)
+								newScript.src = s.src;
+							else
+								newScript.text = s.text;
 							document.body.appendChild(newScript).parentNode.removeChild(newScript);
 						}
 					}
 					if (selector.firstElementChild && selector.firstElementChild.__vue__) {
-						let ve = selector.firstElementChild.__vue__;
+						let fec = selector.firstElementChild;
+						let ve = fec.__vue__;
 						ve.$data.__baseUrl__ = baseUrl || urlTools.normalizeRoot(url);
 						// save initial search
 						ve.$data.__baseQuery__ = urlTools.parseUrlAndQuery(url).query;
+						if (fec.classList.contains('modal')) {
+							let dca = fec.getAttribute('data-controller-attr');
+							if (dca)
+								eventBus.$emit('modalSetAttribites', dca, ve);
+						}
 					}
 					resolve(true);
 				})
@@ -1879,9 +2160,9 @@ app.modules['std:validators'] = function () {
 
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+/* Copyright © 2015-2019 Alex Kukhtin. All rights reserved.*/
 
-// 20181204-7382
+// 20190604-7498
 // services/datamodel.js
 
 (function () {
@@ -1900,6 +2181,7 @@ app.modules['std:validators'] = function () {
 	const FLAG_VIEW = 1;
 	const FLAG_EDIT = 2;
 	const FLAG_DELETE = 4;
+	const DEFAULT_PAGE_SIZE = 20;
 
 	const platform = require('std:platform');
 	const validators = require('std:validators');
@@ -1954,6 +2236,8 @@ app.modules['std:validators'] = function () {
 	}
 
 	function propFromPath(path) {
+		if (!path)
+			return '';
 		let propIx = path.lastIndexOf('.');
 		return path.substring(propIx + 1);
 	}
@@ -2016,10 +2300,12 @@ app.modules['std:validators'] = function () {
 				if (val === this._src_[prop])
 					return;
 				let oldVal = this._src_[prop];
-				let changingEvent = (this._path_ || 'Root') + '.' + prop + '.changing';
-				let ret = this._root_.$emit(changingEvent, this, val, oldVal, prop);
-				if (ret === false)
-					return;
+				if (!this._lockEvents_) {
+					let changingEvent = (this._path_ || 'Root') + '.' + prop + '.changing';
+					let ret = this._root_.$emit(changingEvent, this, val, oldVal, prop);
+					if (ret === false)
+						return;
+				}
 				if (this._src_[prop] && this._src_[prop].$set) {
 					// object
 					this._src_[prop].$set(val);
@@ -2133,6 +2419,9 @@ app.modules['std:validators'] = function () {
 		if (path && path.endsWith(']'))
 			elem.$selected = false;
 
+		if (elem._meta_.$items)
+			elem.$expanded = false; // tree elem
+
 		defPropertyGet(elem, '$valid', function () {
 			if (this._root_._needValidate_)
 				this._root_._validateAll_();
@@ -2189,9 +2478,20 @@ app.modules['std:validators'] = function () {
 			});
 		}
 
+		if (elem._meta_.$itemType) {
+			elem.$setProperty = function (prop, src) {
+				let itmPath = path + '.' + prop;
+				let ne = new elem._meta_.$itemType(src, itmPath, elem);
+				platform.set(this, prop, ne);
+				this._root_.$setDirty(true);
+				return ne;
+			};
+		}
+
 		let constructEvent = ctorname + '.construct';
 		let _lastCaller = null;
-		elem._root_.$emit(constructEvent, elem);
+		let propForConstruct = path ? propFromPath(path) : '';
+		elem._root_.$emit(constructEvent, elem, propForConstruct);
 		if (elem._root_ === elem) {
 			// root element
 			elem._root_ctor_ = elem.constructor;
@@ -2207,6 +2507,8 @@ app.modules['std:validators'] = function () {
 			}
 			elem._setModelInfo_ = setRootModelInfo;
 			elem._findRootModelInfo = findRootModelInfo;
+			elem._saveSelections = saveSelections;
+			elem._restoreSelections = restoreSelections;
 			elem._enableValidate_ = true;
 			elem._needValidate_ = false;
 			elem._modelLoad_ = (caller) => {
@@ -2216,7 +2518,8 @@ app.modules['std:validators'] = function () {
 			};
 			elem._fireLoad_ = () => {
 				platform.defer(() => {
-					elem.$emit('Model.load', elem, _lastCaller);
+					let isRequery = elem.$vm.__isModalRequery();
+					elem.$emit('Model.load', elem, _lastCaller, isRequery);
 					elem._root_.$setDirty(false);
 				});
 			};
@@ -2244,16 +2547,6 @@ app.modules['std:validators'] = function () {
 			} else if (utils.isObjectExact(val)) {
 				seal(val);
 			}
-		}
-	}
-
-	function setRootModelInfo(item, data) {
-		if (!data.$ModelInfo) return;
-		let elem = item;
-		for (let p in data.$ModelInfo) {
-			if (!elem) elem = this[p];
-			elem.$ModelInfo = data.$ModelInfo[p];
-			return; // first element only
 		}
 	}
 
@@ -2382,7 +2675,7 @@ app.modules['std:validators'] = function () {
 
 		defPropertyGet(arr, "$isEmpty", function () {
 			return !this.length;
-		});		
+		});
 
 		defPropertyGet(arr, "$checked", function () {
 			return this.filter((el) => el.$checked);
@@ -2429,7 +2722,7 @@ app.modules['std:validators'] = function () {
 			return this.$insert(src, 'start');
 		};
 
-		arr.$insert = function (src, to) {
+		arr.$insert = function (src, to, current) {
 			const that = this;
 
 			function append(src, select) {
@@ -2441,6 +2734,7 @@ app.modules['std:validators'] = function () {
 					return null; // disabled
 				let len = that.length;
 				let ne = null;
+				let ix;
 				switch (to) {
 					case 'end':
 						len = that.push(newElem);
@@ -2450,6 +2744,18 @@ app.modules['std:validators'] = function () {
 						that.unshift(newElem);
 						ne = that[0];
 						len = 1; 
+						break;
+					case 'above':
+						ix = that.indexOf(current);
+						that.splice(ix, 0, newElem);
+						ne = that[ix];
+						len = ix + 1;
+						break;
+					case 'below':
+						ix = that.indexOf(current) + 1;
+						that.splice(ix, 0, newElem);
+						ne = that[ix];
+						len = ix + 1;
 						break;
 				}
 				if ('$RowCount' in that) that.$RowCount += 1;
@@ -2554,6 +2860,14 @@ app.modules['std:validators'] = function () {
 				}
 			}
 			return this;
+		};
+
+		arr.__fireChange__ = function (opts) {
+			let root = this.$root;
+			let itm = this;
+			if (opts === 'selected')
+				itm = this.$selected;
+			root.$emit(this._path_ + '[].change', this, itm);
 		};
 	}
 
@@ -2669,6 +2983,16 @@ app.modules['std:validators'] = function () {
 			if (sel) sel.$selected = false;
 			this.$selected = true;
 			emitSelect(arr, this);
+			if (this._meta_.$items) {
+				// expand all parent items
+				let p = this._parent_._parent_;
+				while (p) {
+					p.$expanded = true;
+					p = p._parent_._parent_;
+					if (!p || p === this.$root)
+						break;
+				}
+			}
 		};
 	}
 
@@ -2701,7 +3025,7 @@ app.modules['std:validators'] = function () {
 			return null;
 		}
 		if (name in tml.delegates) {
-			return tml.delegates[name];
+			return tml.delegates[name].bind(this.$root);
 		}
 		console.error(`Delegate "${name}" not found in the template`);
 	}
@@ -2983,7 +3307,37 @@ app.modules['std:validators'] = function () {
 		return opts && opts.noDirty;
 	}
 
-	function merge(src, afterSave) {
+	function saveSelections() {
+		let root = this;
+		let t = root.$template;
+		let opts = t && t.options;
+		if (!opts) return;
+		let ps = opts.persistSelect;
+		if (!ps || !ps.length) return;
+		let result = {};
+		for (let p of ps) {
+			let arr = utils.simpleEval(root, p);
+			if (utils.isArray(arr)) {
+				result[p] = arr.$selectedIndex;
+			}
+		}
+		return result;
+	}
+
+
+	function restoreSelections(sels) {
+		if (!sels) return;
+		let root = this;
+		for (let p in sels) {
+			let arr = utils.simpleEval(root, p);
+			let si = sels[p];
+			if (utils.isArray(arr) && si >= 0 && si < arr.length) {
+				arr[si].$select();
+			}
+		}
+	}
+
+	function merge(src, afterSave, existsOnly) {
 		let oldId = this.$id__;
 		try {
 			if (src === null)
@@ -3019,6 +3373,8 @@ app.modules['std:validators'] = function () {
 					} else if (utils.isPrimitiveCtor(ctor)) {
 						platform.set(this, prop, src[prop]);
 					} else {
+						if (existsOnly && !(prop in src))
+							continue; // no item in src
 						let newsrc = new ctor(src[prop], prop, this);
 						platform.set(this, prop, newsrc);
 					}
@@ -3076,18 +3432,37 @@ app.modules['std:validators'] = function () {
         */
 	}
 
+	function checkPeriod(obj) {
+		let f = obj.Filter;
+		if (!f) return obj;
+		if (!('Period' in f))
+			return obj;
+		let p = f.Period;
+		if (period.like(p))
+			f.Period = new period.constructor(p);
+		return obj;
+	}
+
+	function setRootModelInfo(item, data) {
+		if (!data.$ModelInfo) return;
+		let elem = item;
+		for (let p in data.$ModelInfo) {
+			if (!elem) elem = this[p];
+			elem.$ModelInfo = checkPeriod(data.$ModelInfo[p]);
+			return; // first element only
+		}
+	}
+
 	function setModelInfo(root, info, rawData) {
 		// may be default
 		root.__modelInfo = info ? info : {
-			PageSize: 20
+			PageSize: DEFAULT_PAGE_SIZE
 		};
 		let mi = rawData.$ModelInfo;
 		if (!mi) return;
 		for (let p in mi) {
-			root[p].$ModelInfo = mi[p];
+			root[p].$ModelInfo = checkPeriod(mi[p]);
 		}
-		//console.dir(rawData.$ModelInfo);
-		//root._setModelInfo_()
 	}
 
 	app.modules['std:datamodel'] = {
@@ -3129,6 +3504,104 @@ app.modules['std:validators'] = function () {
 
 // Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
 
+/*20171029-7060*/
+/* services/popup.js */
+
+app.modules['std:popup'] = function () {
+
+	const __dropDowns__ = [];
+	let __started = false;
+
+	const __error = 'Perhaps you forgot to create a _close function for popup element';
+
+
+	return {
+		startService: startService,
+		registerPopup: registerPopup,
+		unregisterPopup: unregisterPopup,
+		closeAll: closeAllPopups,
+		closest: closest,
+		closeInside: closeInside
+	};
+
+	function registerPopup(el) {
+		__dropDowns__.push(el);
+	}
+
+	function unregisterPopup(el) {
+		let ix = __dropDowns__.indexOf(el);
+		if (ix !== -1)
+			__dropDowns__.splice(ix, 1);
+		delete el._close;
+	}
+
+	function startService() {
+		if (__started)
+			return;
+
+		__started = true;
+
+		document.body.addEventListener('click', closePopups);
+		document.body.addEventListener('contextmenu', closePopups);
+		document.body.addEventListener('keydown', closeOnEsc);
+	}
+
+
+	function closest(node, css) {
+		if (node) return node.closest(css);
+		return null;
+	}
+
+	function closeAllPopups() {
+		__dropDowns__.forEach((el) => {
+			if (el._close)
+				el._close(document);
+		});
+	}
+
+	function closeInside(el) {
+		if (!el) return;
+		// inside el only
+		let ch = el.querySelectorAll('.popover-wrapper');
+		for (let i = 0; i < ch.length; i++) {
+			let chel = ch[i];
+			if (chel._close) {
+				chel._close();
+			}
+		}
+	}
+
+	function closePopups(ev) {
+		if (__dropDowns__.length === 0)
+			return;
+		for (let i = 0; i < __dropDowns__.length; i++) {
+			let el = __dropDowns__[i];
+			if (closest(ev.target, '.dropdown-item') ||
+				ev.target.hasAttribute('close-dropdown') ||
+				closest(ev.target, '[dropdown-top]') !== el) {
+				if (!el._close) {
+					throw new Error(__error);
+				}
+				el._close(ev.target);
+			}
+		}
+	}
+
+	// close on esc
+	function closeOnEsc(ev) {
+		if (ev.which !== 27) return;
+		for (let i = 0; i < __dropDowns__.length; i++) {
+			let el = __dropDowns__[i];
+			if (!el._close)
+				throw new Error(__error);
+			el._close(ev.target);
+		}
+	}
+};
+
+
+// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+
 // 20181117-7358
 /*site/store.js*/
 
@@ -3137,7 +3610,7 @@ app.components['std:store'] = {
 
 // Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
 
-// 20181117-7359
+// 20190527-7495
 // components/collectionview.js
 
 /*
@@ -3151,6 +3624,7 @@ TODO:
 	const log = require('std:log', true);
 	const utils = require('std:utils');
 	const period = require('std:period');
+	const eventBus = require('std:eventBus');
 
 	const DEFAULT_PAGE_SIZE = 20;
 
@@ -3480,6 +3954,10 @@ TODO:
 				this.$nextTick(() => {
 					this.lockChange = false;
 				});
+			},
+			__setFilter(props) {
+				if (this.ItemsSource !== props.source) return;
+				this.filter[props.prop] = props.value;
 			}
 		},
 		created() {
@@ -3493,9 +3971,13 @@ TODO:
 			});
 			// from datagrid, etc
 			this.$on('sort', this.doSort);
+			eventBus.$on('setFilter', this.__setFilter);
 		},
 		updated() {
 			this.updateFilter();
+		},
+		beforeDestroy() {
+			eventBus.$off('setFilter', this.__setFilter);
 		}
 	});
 
@@ -3609,6 +4091,10 @@ TODO:
 				if (!nq.order) nq.dir = undefined;
 				//console.warn('filter changed');
 				this.commit(nq);
+			},
+			__setFilter(props) {
+				if (this.ItemsSource !== props.source) return;
+				this.Filter[props.prop] = props.value;
 			}
 		},
 		created() {
@@ -3629,6 +4115,11 @@ TODO:
 			});
 
 			this.$on('sort', this.doSort);
+
+			eventBus.$on('setFilter', this.__setFilter);
+		},
+		beforeDestroy() {
+			eventBus.$off('setFilter', this.__setFilter);
 		}
 	});
 
@@ -3762,9 +4253,174 @@ Vue.component('a2-pager', {
 });
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181127-7375
+// 20190402-7475
+/*components/include.js*/
+
+(function () {
+
+	const http = require('std:http');
+	const urlTools = require('std:url');
+	const eventBus = require('std:eventBus');
+
+	function _destroyElement(el) {
+		let fc = el.firstElementChild;
+		if (!fc) return;
+		let vue = fc.__vue__;
+		// Maybe collectionView created the wrapper!
+		if (vue && !vue.$marker)
+			vue = vue.$parent;
+		if (vue && vue.$marker()) {
+			vue.$destroy();
+		}
+	}
+
+	Vue.component('include', {
+		template: '<div :class="implClass"></div>',
+		props: {
+			src: String,
+			cssClass: String,
+			needReload: Boolean,
+			insideDialog: Boolean,
+			done: Function
+		},
+		data() {
+			return {
+				loading: true,
+				currentUrl: '',
+				_needReload: true
+			};
+		},
+		methods: {
+			loaded(ok) {
+				this.loading = false;
+				if (this.insideDialog)
+					eventBus.$emit('modalCreated', this);
+				if (this.done)
+					this.done();
+			},
+			requery() {
+				if (this.currentUrl) {
+					// Do not set loading. Avoid blinking
+					this.__destroy();
+					http.load(this.currentUrl, this.$el).then(this.loaded);
+				}
+			},
+			__destroy() {
+				//console.warn('include has been destroyed');
+				_destroyElement(this.$el);
+			},
+			modalRequery() {
+				if (!this.insideDialog) return;
+				setTimeout(() => {
+					this.requery();
+				}, 1);
+			}
+		},
+		computed: {
+			implClass() {
+				return `include ${this.cssClass || ''} ${this.loading ? 'loading' : ''}`;
+			}
+		},
+		mounted() {
+			//console.warn('include has been mounted');
+			if (this.src) {
+				this.currentUrl = this.src;
+				http.load(this.src, this.$el).then(this.loaded);
+			}
+		},
+		destroyed() {
+			this.__destroy(); // and for dialogs too
+		},
+		watch: {
+			src: function (newUrl, oldUrl) {
+				if (this.insideDialog) {
+					// Dialog. No need to reload always.
+					this.currentUrl = newUrl;
+				}
+				else if (newUrl.split('?')[0] === oldUrl.split('?')[0]) {
+					// Only the search has changed. No need to reload.
+					this.currentUrl = newUrl;
+				}
+				else if (urlTools.idChangedOnly(newUrl, oldUrl)) {
+					// Id has changed after save. No need to reload.
+					this.currentUrl = newUrl;
+				} else if (urlTools.idOrCopyChanged(newUrl, oldUrl)) {
+					// Id has changed after save. No need to reload.
+					this.currentUrl = newUrl;
+				}
+				else {
+					this.loading = true; // hides the current view
+					this.currentUrl = newUrl;
+					this.__destroy();
+					http.load(newUrl, this.$el).then(this.loaded);
+				}
+			},
+			needReload(val) {
+				// works like a trigger
+				if (val) this.requery();
+			}
+		}
+	});
+
+
+	Vue.component('a2-include', {
+		template: '<div class="a2-include"></div>',
+		props: {
+			source: String,
+			arg: undefined
+		},
+		data() {
+			return {
+				needLoad: 0
+			};
+		},
+		methods: {
+			__destroy() {
+				//console.warn('include has been destroyed');
+				_destroyElement(this.$el);
+			},
+			loaded() {
+			},
+			makeUrl() {
+				let arg = this.arg || '0';
+				return urlTools.combine('_page', this.source, arg);
+			},
+			load() {
+				let url = this.makeUrl();
+				this.__destroy();
+				http.load(url, this.$el).then(this.loaded);
+			}
+		},
+		watch: {
+			source(newVal, oldVal) {
+				//console.warn(`source changed ${newVal}, ${oldVal}`);
+				this.needLoad += 1;
+			},
+			arg(newVal, oldVal) {
+				//console.warn(`arg changed ${newVal}, ${oldVal}`);
+				this.needLoad += 1;
+			},
+			needLoad() {
+				//console.warn(`load iteration: ${this.needLoad}`);
+				this.load();
+			}
+		},
+		mounted() {
+			if (this.source) {
+				this.currentUrl = this.makeUrl(this.source);
+				http.load(this.currentUrl, this.$el).then(this.loaded);
+			}
+		},
+		destroyed() {
+			this.__destroy(); // and for dialogs too
+		}
+	});
+})();
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
+
+// 20190605-7498
 // controllers/base.js
 
 (function () {
@@ -3781,6 +4437,7 @@ Vue.component('a2-pager', {
 	const mask = require('std:mask');
 	const modelInfo = require('std:modelInfo');
 	const platform = require('std:platform');
+	const htmlTools = require('std:html', true /*no error*/);
 
 	const store = component('std:store');
 	const documentTitle = component("std:doctitle", true /*no error*/);
@@ -3917,6 +4574,12 @@ Vue.component('a2-pager', {
 				let root = this.$data;
 				return root._canExec_(cmd, arg, opts);
 			},
+			$setCurrentUrl(url) {
+				if (this.inDialog)
+					url = urltools.combine('_dialog', url);
+				this.$data.__baseUrl__ = url;
+				eventBus.$emit('modalSetBase', url);
+			},
 			$save(opts) {
 				if (this.$data.$readOnly)
 					return;
@@ -3932,18 +4595,22 @@ Vue.component('a2-pager', {
 					this.$alert(locale.$MakeValidFirst, undefined, errs);
 					return;
 				}
+				self.$data.$emit('Model.beforeSave', self.$data);
+
+				let saveSels = self.$data._saveSelections();
+
 				return new Promise(function (resolve, reject) {
 					let jsonData = utils.toJson({ baseUrl: urlToSave, data: self.$data });
-					let wasNew = self.$baseUrl.indexOf('/new') !== -1;
+					let wasNew = urltools.isNewPath(self.$baseUrl);
 					dataservice.post(url, jsonData).then(function (data) {
-						self.$data.$merge(data, true);
+						self.$data.$merge(data, true, true /*only exists*/);
 						self.$data.$emit('Model.saved', self.$data);
 						self.$data.$setDirty(false);
 						// data is a full model. Resolve requires only single element.
 						let dataToResolve;
 						let newId;
 						for (let p in data) {
-							// always first element in the result
+							// always first element in the result //TODO:check ????
 							dataToResolve = data[p];
 							newId = self.$data[p].$id; // new element
 							if (dataToResolve)
@@ -3962,6 +4629,7 @@ Vue.component('a2-pager', {
 							// and in the __baseUrl__
 							self.$data.__baseUrl__ = urltools.replaceSegment(self.$data.__baseUrl__, newId, 'edit');
 						}
+						self.$data._restoreSelections(saveSels);
 						resolve(dataToResolve); // single element (raw data)
 						let toast = opts && opts.toast ? opts.toast : null;
 						if (toast)
@@ -4063,6 +4731,8 @@ Vue.component('a2-pager', {
 					}
 				}
 
+				let saveSels = dat._saveSelections();
+
 				return new Promise(function (resolve, reject) {
 					let dataToQuery = { baseUrl: urltools.replaceUrlQuery(self.$baseUrl, mi) };
 					if (utils.isDefined(dat.Query)) {
@@ -4077,6 +4747,7 @@ Vue.component('a2-pager', {
 							dat.$merge(data);
 							dat._setModelInfo_(undefined, data);
 							dat._fireLoad_();
+							dat._restoreSelections(saveSels);
 							resolve(dat);
 						} else {
 							throw new Error('Invalid response type for $reload');
@@ -4089,7 +4760,7 @@ Vue.component('a2-pager', {
 
 			$requery() {
 				if (this.inDialog)
-					alert('$requery command is not supported in dialogs');
+					eventBus.$emit('modalRequery', this.$baseUrl);
 				else
 					eventBus.$emit('requery');
 			},
@@ -4125,6 +4796,7 @@ Vue.component('a2-pager', {
 			},
 			$navigate(url, data, newWindow, update, opts) {
 				if (this.$isReadOnly(opts)) return;
+				eventBus.$emit('closeAllPopups');
 				let urlToNavigate = urltools.createUrlForNavigate(url, data);
 				if (newWindow === true) {
 					let nwin = window.open(urlToNavigate, "_blank");
@@ -4157,6 +4829,24 @@ Vue.component('a2-pager', {
 				window.location = root + url;
 			},
 
+			$file(url, arg, opts) {
+				const root = window.$$rootUrl;
+				let id = arg;
+				if (arg && utils.isObject(arg))
+					id = utils.getStringId(arg);
+				let fileUrl = urltools.combine(root, '_file', url, id);
+				switch ((opts || {}).action) {
+					case 'download':
+						htmlTools.downloadUrl(fileUrl + '?export=1');
+						break;
+					case 'print':
+						htmlTools.printDirect(fileUrl);
+						break;
+					default:
+						window.open(fileUrl, '_blank');
+				}
+			},
+
 			$attachment(url, arg, opts) {
 				const root = window.$$rootUrl;
 				let cmd = opts && opts.export ? 'export' : 'show';
@@ -4164,7 +4854,7 @@ Vue.component('a2-pager', {
 				if (arg && utils.isObject(arg))
 					id = utils.getStringId(arg);
 				let attUrl = urltools.combine(root, 'attachment', cmd, id);
-				let qry = { base: url};
+				let qry = { base: url };
 				attUrl = attUrl + urltools.makeQueryString(qry);
 				if (opts && opts.newWindow)
 					window.open(attUrl, '_blank');
@@ -4333,6 +5023,7 @@ Vue.component('a2-pager', {
 				if (this.$isReadOnly(opts))
 					return;
 				const that = this;
+				eventBus.$emit('closeAllPopups');
 				function argIsNotAnArray() {
 					if (!utils.isArray(arg)) {
 						console.error(`$dialog.${command}. The argument is not an array`);
@@ -4358,6 +5049,13 @@ Vue.component('a2-pager', {
 				function doDialog() {
 					// result always is raw data
 					switch (command) {
+						case 'new':
+							if (argIsNotAnArray()) return;
+							return __runDialog(url, 0, query, (result) => {
+								let sel = arg.$selected;
+								if (sel)
+									sel.$merge(result);
+							});
 						case 'append':
 							if (argIsNotAnArray()) return;
 							return __runDialog(url, 0, query, (result) => { arg.$append(result); });
@@ -4375,15 +5073,22 @@ Vue.component('a2-pager', {
 							});
 						case 'edit-selected':
 							if (argIsNotAnArray()) return;
-							return __runDialog(url, arg.$selected, query, (result) => { arg.$selected.$merge(result); });
-						case 'edit':
-							if (argIsNotAnObject()) return;
-							return __runDialog(url, arg, query, (result) => {
-								if (arg.$merge)
-									arg.$merge(result);
+							return __runDialog(url, arg.$selected, query, (result) => {
+								arg.$selected.$merge(result);
+								arg.__fireChange__('selected');
 								if (opts && opts.reloadAfter) {
 									that.$reload();
 								}
+							});
+						case 'edit':
+							if (argIsNotAnObject()) return;
+							return __runDialog(url, arg, query, (result) => {
+								if (result === 'reload')
+									that.$reload();
+								else if (arg.$merge && utils.isObjectExact(result))
+									arg.$merge(result);
+								else if (opts && opts.reloadAfter)
+									that.$reload();
 							});
 						case 'copy':
 							if (argIsNotAnObject()) return;
@@ -4420,15 +5125,45 @@ Vue.component('a2-pager', {
 				window.location = root + url;
 			},
 
-			$report(rep, arg, opts) {
+			$exportTo(format, fileName) {
+				const root = window.$$rootUrl;
+				let elem = this.$el.getElementsByClassName('sheet-page');
+				if (!elem.length) {
+					console.dir('element not found (.sheet-page)');
+					return;
+				}
+				let table = elem[0];
+				if (htmlTools) {
+					htmlTools.getColumnsWidth(table);
+					htmlTools.getRowHeight(table);
+				}
+				let html = table.innerHTML;
+				let data = { format, html, fileName };
+				const routing = require('std:routing');
+				let url = `${root}/${routing.dataUrl()}/exportTo`;
+				dataservice.post(url, utils.toJson(data), true).then(function (blob) {
+					if (htmlTools)
+						htmlTools.downloadBlob(blob, fileName, format);
+				}).catch(function (error) {
+					alert(error);
+				});
+			},
+
+			$report(rep, arg, opts, repBaseUrl, data) {
 				if (this.$isReadOnly(opts)) return;
 				if (this.$isLoading) return;
 
 				let cmd = 'show';
-				if (opts && opts.export)
-					cmd = 'export';
-				else if (opts && opts.attach)
-					cmd = 'attach';
+				let fmt = '';
+				if (opts) {
+					if (opts.export) {
+						cmd = 'export';
+						fmt = opts.format || '';
+					} else if (opts.attach)
+						cmd = 'attach';
+					else if (opts.print)
+						cmd = 'print';
+				}
 
 				const doReport = () => {
 					let id = arg;
@@ -4436,15 +5171,23 @@ Vue.component('a2-pager', {
 						id = utils.getStringId(arg);
 					const root = window.$$rootUrl;
 					let url = `${root}/report/${cmd}/${id}`;
-					let reportUrl = this.$indirectUrl || this.$baseUrl;
+					let reportUrl = urltools.removeFirstSlash(repBaseUrl) || this.$indirectUrl || this.$baseUrl;
 					let baseUrl = urltools.makeBaseUrl(reportUrl);
-					let qry = { base: baseUrl, rep: rep };
+					let qry = Object.assign({}, { base: baseUrl, rep: rep }, data);
+					if (fmt)
+						qry.format = fmt;
 					url = url + urltools.makeQueryString(qry);
 					// open in new window
-					if (opts && opts.export)
+					if (!opts) {
+						window.open(url, '_blank');
+						return;
+					}
+					if (opts.export)
 						window.location = url;
-					else if (opts && opts.attach)
-						return; // просто ничего не делаем
+					else if (opts.print)
+						htmlTools.printDirect(url);
+					else if (opts.attach)
+						return; // do nothing
 					else
 						window.open(url, '_blank');
 				};
@@ -4482,6 +5225,10 @@ Vue.component('a2-pager', {
 				eventBus.$emit('modalClose', result);
 			},
 
+			$setFilter(obj, prop, val) {
+				eventBus.$emit('setFilter', { source: obj, prop: prop, value: val });
+			},
+
 			$modalSelect(array, opts) {
 				if (!('$selected' in array)) {
 					console.error('Invalid array for $modalSelect');
@@ -4512,8 +5259,9 @@ Vue.component('a2-pager', {
 			},
 
 			$close() {
-				if (this.$saveModified())
+				if (this.$saveModified()) {
 					this.$store.commit("close");
+				}
 			},
 
 			$showHelp(path) {
@@ -4530,28 +5278,36 @@ Vue.component('a2-pager', {
 				this.$reload();
 			},
 
-			$saveModified() {
+			$saveModified(message, title) {
 				if (!this.$isDirty)
 					return true;
 				let self = this;
 				let dlg = {
-					message: locale.$ElementWasChanged,
-					title: locale.$ConfirmClose,
+					message: message || locale.$ElementWasChanged,
+					title: title || locale.$ConfirmClose,
 					buttons: [
 						{ text: locale.$Save, result: "save" },
 						{ text: locale.$NotSave, result: "close" },
 						{ text: locale.$Cancel, result: false }
 					]
 				};
+				function closeImpl(result) {
+					if (self.inDialog)
+						eventBus.$emit('modalClose', result);
+					else
+						self.$close();
+				}
+
 				this.$confirm(dlg).then(function (result) {
 					if (result === 'close') {
 						// close without saving
 						self.$data.$setDirty(false);
-						self.$close();
+						closeImpl(false);
 					} else if (result === 'save') {
 						// save then close
-						self.$save().then(function () {
-							self.$close();
+						self.$save().then(function (saveResult) {
+							//console.dir(saveResult);
+							closeImpl(saveResult);
 						});
 					}
 				});
@@ -4567,7 +5323,7 @@ Vue.component('a2-pager', {
 				if (opts.mask)
 					return value ? mask.getMasked(opts.mask, value) : value;
 				if (opts.dataType)
-					return utils.format(value, opts.dataType, opts.hideZeros);
+					return utils.format(value, opts.dataType, { hideZeros: opts.hideZeros, format: opts.format });
 				if (opts.format && opts.format.indexOf('{0}') !== -1)
 					return opts.format.replace('{0}', value);
 				return value;
@@ -4643,7 +5399,8 @@ Vue.component('a2-pager', {
 							if (rcName in data) {
 								arr.$RowCount = data[rcName];
 							}
-							modelInfo.reconcile(data.$ModelInfo[propName]);
+							if (data.$ModelInfo)
+								modelInfo.reconcile(data.$ModelInfo[propName]);
 							arr._root_._setModelInfo_(arr, data);
 						}
 						resolve(arr);
@@ -4728,13 +5485,17 @@ Vue.component('a2-pager', {
 					$modalClose: this.$modalClose,
 					$msg: this.$msg,
 					$alert: this.$alert,
+					$confirm: this.$confirm,
 					$showDialog: this.$showDialog,
+					$saveModified: this.$saveModified,
 					$asyncValid: this.$asyncValid,
 					$toast: this.$toast,
 					$requery: this.$requery,
 					$reload: this.$reload,
 					$notifyOwner: this.$notifyOwner,
-					$defer: platform.defer
+					$navigate: this.$navigate,
+					$defer: platform.defer,
+					$setFilter: this.$setFilter
 				};
 				Object.defineProperty(ctrl, "$isDirty", {
 					enumerable: true,
@@ -4760,6 +5521,24 @@ Vue.component('a2-pager', {
 					let el = array.find(itm => itm.$id === token.id);
 					if (el && el.$select) el.$select();
 				});
+			},
+			__parseControllerAttributes(attr) {
+				if (!attr) return null;
+				let json = JSON.parse(attr.replace(/\'/g, '"'));
+				let result = {};
+				if (json.canClose) {
+					let ccd = this.$delegate(json.canClose);
+					if (ccd)
+						result.canClose = ccd.bind(this.$data);
+				}
+				if (json.alwaysOk)
+					result.alwaysOk = true;
+				return result;
+			},
+			__isModalRequery() {
+				let arg = { url: this.$baseUrl, result: false };
+				eventBus.$emit('isModalRequery', arg);
+				return arg.result;
 			}
 		},
 		created() {
@@ -4792,6 +5571,7 @@ Vue.component('a2-pager', {
 
 			this.$off('localQueryChange', this.__queryChange);
 			this.$off('cwChange', this.__cwChange);
+			htmlTools.removePrintFrame();
 		},
 		beforeUpdate() {
 			__updateStartTime = performance.now();

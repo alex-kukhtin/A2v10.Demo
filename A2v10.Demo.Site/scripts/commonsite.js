@@ -1,6 +1,6 @@
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20180428-7171
+// 20190226-7444
 // app.js
 
 "use strict";
@@ -70,7 +70,7 @@
 		let elRect = el.getBoundingClientRect();
 		let pElem = el.parentElement;
 		while (pElem) {
-			if (pElem.offsetHeight <= pElem.scrollHeight)
+			if (pElem.offsetHeight < pElem.scrollHeight)
 				break;
 			pElem = pElem.parentElement;
 		}
@@ -126,9 +126,9 @@
 
 })();
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181203-7381
+// 20190414-7485
 // services/utils.js
 
 app.modules['std:utils'] = function () {
@@ -136,6 +136,7 @@ app.modules['std:utils'] = function () {
 	const locale = require('std:locale');
 	const platform = require('std:platform');
 	const dateLocale = locale.$Locale;
+	const numLocale = locale.$Locale;
 	const _2digit = '2-digit';
 
 	const dateOptsDate = { timeZone: 'UTC', year: 'numeric', month: _2digit, day: _2digit };
@@ -144,8 +145,10 @@ app.modules['std:utils'] = function () {
 	const formatDate = new Intl.DateTimeFormat(dateLocale, dateOptsDate).format;
 	const formatTime = new Intl.DateTimeFormat(dateLocale, dateOptsTime).format;
 
-	const currencyFormat = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true }).format;
-	const numberFormat = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 6, useGrouping: true }).format;
+	const currencyFormat = new Intl.NumberFormat(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true }).format;
+	const numberFormat = new Intl.NumberFormat(numLocale, { minimumFractionDigits: 0, maximumFractionDigits: 6, useGrouping: true }).format;
+
+	let numFormatCache = {};
 
 
 	return {
@@ -196,7 +199,12 @@ app.modules['std:utils'] = function () {
 			contains: textContains,
 			containsText: textContainsText,
 			sanitize,
-			splitPath
+			splitPath,
+			capitalize
+		},
+		currency: {
+			round: currencyRound,
+			format: currencyFormat
 		},
 		func: {
 			curry,
@@ -298,16 +306,15 @@ app.modules['std:utils'] = function () {
 		return r;
 	}
 
-	function evaluate(obj, path, dataType, hideZeros, skipFormat) {
+	function evaluate(obj, path, dataType, opts, skipFormat) {
 		let r = simpleEval(obj, path);
 		if (skipFormat) return r;
 		if (isDate(r))
-			return format(r, dataType, hideZeros);
+			return format(r, dataType);
 		else if (isObject(r))
 			return toJson(r);
-		else if (format)
-			return format(r, dataType, hideZeros);
-		return r;
+		else
+			return format(r, dataType, opts);
 	}
 
 	function pad2(num) {
@@ -327,7 +334,43 @@ app.modules['std:utils'] = function () {
 		return obj;
 	}
 
-	function format(obj, dataType, hideZeros) {
+	function formatNumber(num, format) {
+		if (!format)
+			return numberFormat(num);
+		if (numFormatCache[format])
+			return numFormatCache[format](num);
+		let re = /^([#][,\s])?(#*)?(0*)?\.?(0*)?(#*)?$/;
+		let fmt = format.match(re);
+		if (!fmt) {
+			console.error(`Invalid number format: '${format}'`);
+			return num;
+		}
+		function getlen(x) {
+			return x ? x.length : 0;
+		}
+
+		// 1-sep, 2-int part(#), 3-int part(0), 4-fract part (0), 5-fract part (#) 
+		let useGrp = !!fmt[1],
+			fih = getlen(fmt[2]), fi0 = getlen(fmt[3]),
+			fp0 = getlen(fmt[4]), fph = getlen(fmt[5]);
+
+		//console.dir(fmt);
+		//console.dir({ useGrp, fp0, fph, fi0, fih });
+
+		let formatFunc = Intl.NumberFormat(numLocale, {
+			minimumFractionDigits: fp0,
+			maximumFractionDigits: fp0 + fph,
+			minimumIntegerDigits: fi0,
+			useGrouping: useGrp
+		}).format;
+
+		numFormatCache[format] = formatFunc;
+
+		return formatFunc(num);
+	}
+
+	function format(obj, dataType, opts) {
+		opts = opts || {};
 		if (!dataType)
 			return obj;
 		if (!isDefined(obj))
@@ -342,6 +385,8 @@ app.modules['std:utils'] = function () {
 					return '';
 				return formatDate(obj) + ' ' + formatTime(obj);
 			case "Date":
+				if (isString(obj))
+					obj = string2Date(obj);
 				if (!isDate(obj)) {
 					console.error(`Invalid Date for utils.format (${obj})`);
 					return obj;
@@ -369,20 +414,25 @@ app.modules['std:utils'] = function () {
 				return obj.format('Date');
 			case "Currency":
 				if (!isNumber(obj)) {
-					console.error(`Invalid Currency for utils.format (${obj})`);
-					return obj;
+					obj = toNumber(obj);
+					//TODO:check console.error(`Invalid Currency for utils.format (${obj})`);
+					//return obj;
 				}
-				if (hideZeros && obj === 0)
+				if (opts.hideZeros && obj === 0)
 					return '';
+				if (opts.format)
+					return formatNumber(obj, opts.format);
 				return currencyFormat(obj);
 			case "Number":
 				if (!isNumber(obj)) {
-					console.error(`Invalid Number for utils.format (${obj})`);
-					return obj;
+					obj = toNumber(obj);
+					//TODO:check console.error(`Invalid Number for utils.format (${obj})`);
+					//return obj;
 				}
-				if (hideZeros && obj === 0)
+				if (opts.hideZeros && obj === 0)
 					return '';
-				return numberFormat(obj);
+
+				return formatNumber(obj, opts.format);
 			default:
 				console.error(`Invalid DataType for utils.format (${dataType})`);
 		}
@@ -445,18 +495,37 @@ app.modules['std:utils'] = function () {
 		return str;
 	}
 
+	function string2Date(str) {
+		try {
+			let dt = new Date(str);
+			dt.setHours(0, -dt.getTimezoneOffset(), 0, 0);
+			return dt;
+		} catch (err) {
+			return str;
+		}
+	}
+
 	function dateParse(str) {
 		str = str || '';
 		if (!str) return dateZero();
 		let today = dateToday();
-		let seg = str.split('.');
+		let seg = str.split(/[^\d]/).filter(x => x);
 		if (seg.length === 1) {
 			seg.push('' + (today.getMonth() + 1));
 			seg.push('' + today.getFullYear());
 		} else if (seg.length === 2) {
 			seg.push('' + today.getFullYear());
 		}
-		let td = new Date(+seg[2], +seg[1] - 1, +seg[0], 0, 0, 0, 0);
+		let normalizeYear = function (y) {
+			y = '' + y;
+			switch (y.length) {
+				case 2: y = '20' + y; break;
+				case 4: break;
+				default: y = today.getFullYear(); break;
+			}
+			return +y;
+		};
+		let td = new Date(+normalizeYear(seg[2]), +((seg[1] ? seg[1] : 1) - 1), +seg[0], 0, 0, 0, 0);
 		if (isNaN(td.getDate()))
 			return dateZero();
 		td.setHours(0, -td.getTimezoneOffset(), 0, 0);
@@ -583,6 +652,11 @@ app.modules['std:utils'] = function () {
 		};
 	}
 
+	function capitalize(text) {
+		if (!text) return '';
+		return text.charAt(0).toUpperCase() + text.slice(1);
+	}
+
 	function textContains(text, probe) {
 		if (!probe)
 			return true;
@@ -625,12 +699,26 @@ app.modules['std:utils'] = function () {
 			return fn(...args, ..._arg);
 		};
 	}
+
+	function currencyRound(n, digits) {
+		if (isNaN(n))
+			return Nan;
+		if (!isDefined(digits))
+			digits = 2;
+		let m = false;
+		if (n < 0) {
+			n = -n;
+			m = true;
+		}
+		// toFixed = avoid js rounding error
+		let r = Number(Math.round(n.toFixed(12) + `e${digits}`) + `e-${digits}`);
+		return m ? -r : r;
+	}
 };
 
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
-
-/*20180619-7227*/
+/*20190411-7483*/
 /* services/url.js */
 
 app.modules['std:url'] = function () {
@@ -652,7 +740,9 @@ app.modules['std:url'] = function () {
 		firstUrl: '',
 		encodeUrl: encodeURIComponent,
 		helpHref,
-		replaceSegment: replaceSegment
+		replaceSegment,
+		removeFirstSlash,
+		isNewPath
 	};
 
 	function normalize(elem) {
@@ -672,6 +762,11 @@ app.modules['std:url'] = function () {
 		return path;
 	}
 
+	function removeFirstSlash(url) {
+		if (url && url.startsWith && url.startsWith('/'))
+			return url.substring(1);
+		return url;
+	}
 	function combine(...args) {
 		return '/' + args.map(normalize).filter(x => !!x).join('/');
 	}
@@ -732,10 +827,17 @@ app.modules['std:url'] = function () {
 		let os = o1.split('/');
 		if (ns.length !== os.length)
 			return false;
-		if (os[os.length - 1] === 'new' && ns[ns.length - 1] !== 'new') {
+
+		function isNewPathArr(arr) {
+			let ai = arr[arr.length - 1];
+			return ai === 'new' || ai === '0';
+		}
+
+		if (isNewPathArr(os) && !isNewPathArr(ns)) {
 			if (ns.slice(0, ns.length - 1).join('/') === os.slice(0, os.length - 1).join('/'))
 				return true;
 		}
+
 		return false;
 	}
 
@@ -815,13 +917,33 @@ app.modules['std:url'] = function () {
 		alert('todo::replaceId');
 	}
 
+	function isDialogPath(url) {
+		return url.startsWith('/_dialog/');
+	}
+
 	function replaceSegment(url, id, action) {
 		let parts = url.split('/');
-		if (action) parts.pop();
-		if (id) parts.pop();
-		if (action) parts.push(action);
-		if (id) parts.push(id);
+		if (isDialogPath(url)) {
+			parts.pop();
+			if (id)
+				parts.push(id);
+		} else {
+			if (action) parts.pop();
+			if (id) parts.pop();
+			if (action) parts.push(action);
+			if (id) parts.push(id);
+		}
 		return parts.join('/');
+	}
+
+	function isNewPath(url) {
+		url = url.split('?')[0]; // first segment
+		if (!url) return false;
+		if (url.indexOf('/new') !== -1)
+			return true;
+		if (isDialogPath(url) && url.endsWith('/0'))
+			return true;
+		return false;
 	}
 };
 
@@ -830,9 +952,9 @@ app.modules['std:url'] = function () {
 
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181024-7328
+// 20190223-7441
 // services/period.js
 
 app.modules['std:period'] = function () {
@@ -962,16 +1084,28 @@ app.modules['std:period'] = function () {
 	};
 
 
-	function isPeriod(value) { return value instanceof TPeriod; }
-
+	
 	return {
 		isPeriod,
+		like: likePeriod,
 		constructor: TPeriod,
 		zero: zeroPeriod,
 		all: allDataPeriod,
 		create: createPeriod,
 		predefined: predefined
 	};
+
+	function isPeriod(value) { return value instanceof TPeriod; }
+
+	function likePeriod(obj) {
+		if (!obj)
+			return false;
+		if (Object.getOwnPropertyNames(obj).length !== 2)
+			return false;
+		if (obj.hasOwnProperty('From') && obj.hasOwnProperty('To'))
+			return true;
+		return false;
+	}
 
 	function zeroPeriod() {
 		return new TPeriod();
@@ -986,15 +1120,16 @@ app.modules['std:period'] = function () {
 			{ name: locale.$Today, key: 'today' },
 			{ name: locale.$Yesterday, key: 'yesterday' },
 			{ name: locale.$Last7Days, key: 'last7' },
-			{ name: locale.$Last30Days, key: 'last30' },
+			//{ name: locale.$Last30Days, key: 'last30' },
 			//{ name: locale.$MonthToDate, key: 'startMonth' },
 			{ name: locale.$CurrMonth, key: 'currMonth' },
 			{ name: locale.$PrevMonth, key: 'prevMonth' },
 			//{ name: locale.$QuartToDate, key: 'startQuart' },
 			{ name: locale.$CurrQuart, key: 'currQuart' },
 			{ name: locale.$PrevQuart, key: 'prevQuart' },
-			//{ name: locale.$YearToDate, key: 'startYear' }
-			{name: locale.$CurrYear, key: 'currYear'}
+			//{ name: locale.$YearToDate, key: 'startYear' },
+			{ name: locale.$CurrYear, key: 'currYear'},
+			{ name: locale.$PrevYear, key: 'prevYear' }
 		];
 		if (showAll) {
 			menu.push({ name: locale.$AllPeriodData, key: 'allData' });
@@ -1081,6 +1216,12 @@ app.modules['std:period'] = function () {
 					p.set(dy1, dy2);
 				}
 				break;
+			case 'prevYear': {
+				let dy1 = date.create(today.getFullYear() - 1, 1, 1);
+				let dy2 = date.create(today.getFullYear() - 1, 12, 31);
+				p.set(dy1, dy2);
+			}
+				break;
 			case 'allData':
 				// full period
 				p.set(date.minDate, date.maxDate);
@@ -1147,9 +1288,9 @@ app.modules['std:modelInfo'] = function () {
 };
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181125-7372
+// 20190221-7439
 /* services/http.js */
 
 app.modules['std:http'] = function () {
@@ -1166,6 +1307,15 @@ app.modules['std:http'] = function () {
 		upload: upload,
 		localpost
 	};
+
+	function blob2String(blob, callback) {
+		const fr = new FileReader();
+		fr.addEventListener('loadend', (e) => {
+			const text = fr.result;
+			callback(text);
+		});
+		fr.readAsText(blob);
+	}
 
 	function doRequest(method, url, data, raw) {
 		return new Promise(function (resolve, reject) {
@@ -1185,8 +1335,12 @@ app.modules['std:http'] = function () {
 					resolve(xhrResult);
 				}
 				else if (xhr.status === 255) {
-					if (raw)
-						reject(xhr.statusText); // response is blob!
+					if (raw) {
+						if (xhr.response instanceof Blob)
+							blob2String(xhr.response, (msg) => reject('server error: ' + msg));
+						else
+							reject(xhr.statusText); // response is blob!
+					}
 					else
 						reject(xhr.responseText || xhr.statusText);
 				}
@@ -1266,15 +1420,24 @@ app.modules['std:http'] = function () {
 						let s = rdoc.scripts[i];
 						if (s.type === 'text/javascript') {
 							let newScript = document.createElement("script");
-							newScript.text = s.text;
+							if (s.src)
+								newScript.src = s.src;
+							else
+								newScript.text = s.text;
 							document.body.appendChild(newScript).parentNode.removeChild(newScript);
 						}
 					}
 					if (selector.firstElementChild && selector.firstElementChild.__vue__) {
-						let ve = selector.firstElementChild.__vue__;
+						let fec = selector.firstElementChild;
+						let ve = fec.__vue__;
 						ve.$data.__baseUrl__ = baseUrl || urlTools.normalizeRoot(url);
 						// save initial search
 						ve.$data.__baseQuery__ = urlTools.parseUrlAndQuery(url).query;
+						if (fec.classList.contains('modal')) {
+							let dca = fec.getAttribute('data-controller-attr');
+							if (dca)
+								eventBus.$emit('modalSetAttribites', dca, ve);
+						}
 					}
 					resolve(true);
 				})
@@ -2024,9 +2187,9 @@ Vue.component('a2-pager', {
 });
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+/* Copyright © 2015-2019 Alex Kukhtin. All rights reserved.*/
 
-// 20181204-7382
+// 20190604-7498
 // services/datamodel.js
 
 (function () {
@@ -2045,6 +2208,7 @@ Vue.component('a2-pager', {
 	const FLAG_VIEW = 1;
 	const FLAG_EDIT = 2;
 	const FLAG_DELETE = 4;
+	const DEFAULT_PAGE_SIZE = 20;
 
 	const platform = require('std:platform');
 	const validators = require('std:validators');
@@ -2099,6 +2263,8 @@ Vue.component('a2-pager', {
 	}
 
 	function propFromPath(path) {
+		if (!path)
+			return '';
 		let propIx = path.lastIndexOf('.');
 		return path.substring(propIx + 1);
 	}
@@ -2161,10 +2327,12 @@ Vue.component('a2-pager', {
 				if (val === this._src_[prop])
 					return;
 				let oldVal = this._src_[prop];
-				let changingEvent = (this._path_ || 'Root') + '.' + prop + '.changing';
-				let ret = this._root_.$emit(changingEvent, this, val, oldVal, prop);
-				if (ret === false)
-					return;
+				if (!this._lockEvents_) {
+					let changingEvent = (this._path_ || 'Root') + '.' + prop + '.changing';
+					let ret = this._root_.$emit(changingEvent, this, val, oldVal, prop);
+					if (ret === false)
+						return;
+				}
 				if (this._src_[prop] && this._src_[prop].$set) {
 					// object
 					this._src_[prop].$set(val);
@@ -2278,6 +2446,9 @@ Vue.component('a2-pager', {
 		if (path && path.endsWith(']'))
 			elem.$selected = false;
 
+		if (elem._meta_.$items)
+			elem.$expanded = false; // tree elem
+
 		defPropertyGet(elem, '$valid', function () {
 			if (this._root_._needValidate_)
 				this._root_._validateAll_();
@@ -2334,9 +2505,20 @@ Vue.component('a2-pager', {
 			});
 		}
 
+		if (elem._meta_.$itemType) {
+			elem.$setProperty = function (prop, src) {
+				let itmPath = path + '.' + prop;
+				let ne = new elem._meta_.$itemType(src, itmPath, elem);
+				platform.set(this, prop, ne);
+				this._root_.$setDirty(true);
+				return ne;
+			};
+		}
+
 		let constructEvent = ctorname + '.construct';
 		let _lastCaller = null;
-		elem._root_.$emit(constructEvent, elem);
+		let propForConstruct = path ? propFromPath(path) : '';
+		elem._root_.$emit(constructEvent, elem, propForConstruct);
 		if (elem._root_ === elem) {
 			// root element
 			elem._root_ctor_ = elem.constructor;
@@ -2352,6 +2534,8 @@ Vue.component('a2-pager', {
 			}
 			elem._setModelInfo_ = setRootModelInfo;
 			elem._findRootModelInfo = findRootModelInfo;
+			elem._saveSelections = saveSelections;
+			elem._restoreSelections = restoreSelections;
 			elem._enableValidate_ = true;
 			elem._needValidate_ = false;
 			elem._modelLoad_ = (caller) => {
@@ -2361,7 +2545,8 @@ Vue.component('a2-pager', {
 			};
 			elem._fireLoad_ = () => {
 				platform.defer(() => {
-					elem.$emit('Model.load', elem, _lastCaller);
+					let isRequery = elem.$vm.__isModalRequery();
+					elem.$emit('Model.load', elem, _lastCaller, isRequery);
 					elem._root_.$setDirty(false);
 				});
 			};
@@ -2389,16 +2574,6 @@ Vue.component('a2-pager', {
 			} else if (utils.isObjectExact(val)) {
 				seal(val);
 			}
-		}
-	}
-
-	function setRootModelInfo(item, data) {
-		if (!data.$ModelInfo) return;
-		let elem = item;
-		for (let p in data.$ModelInfo) {
-			if (!elem) elem = this[p];
-			elem.$ModelInfo = data.$ModelInfo[p];
-			return; // first element only
 		}
 	}
 
@@ -2527,7 +2702,7 @@ Vue.component('a2-pager', {
 
 		defPropertyGet(arr, "$isEmpty", function () {
 			return !this.length;
-		});		
+		});
 
 		defPropertyGet(arr, "$checked", function () {
 			return this.filter((el) => el.$checked);
@@ -2574,7 +2749,7 @@ Vue.component('a2-pager', {
 			return this.$insert(src, 'start');
 		};
 
-		arr.$insert = function (src, to) {
+		arr.$insert = function (src, to, current) {
 			const that = this;
 
 			function append(src, select) {
@@ -2586,6 +2761,7 @@ Vue.component('a2-pager', {
 					return null; // disabled
 				let len = that.length;
 				let ne = null;
+				let ix;
 				switch (to) {
 					case 'end':
 						len = that.push(newElem);
@@ -2595,6 +2771,18 @@ Vue.component('a2-pager', {
 						that.unshift(newElem);
 						ne = that[0];
 						len = 1; 
+						break;
+					case 'above':
+						ix = that.indexOf(current);
+						that.splice(ix, 0, newElem);
+						ne = that[ix];
+						len = ix + 1;
+						break;
+					case 'below':
+						ix = that.indexOf(current) + 1;
+						that.splice(ix, 0, newElem);
+						ne = that[ix];
+						len = ix + 1;
 						break;
 				}
 				if ('$RowCount' in that) that.$RowCount += 1;
@@ -2699,6 +2887,14 @@ Vue.component('a2-pager', {
 				}
 			}
 			return this;
+		};
+
+		arr.__fireChange__ = function (opts) {
+			let root = this.$root;
+			let itm = this;
+			if (opts === 'selected')
+				itm = this.$selected;
+			root.$emit(this._path_ + '[].change', this, itm);
 		};
 	}
 
@@ -2814,6 +3010,16 @@ Vue.component('a2-pager', {
 			if (sel) sel.$selected = false;
 			this.$selected = true;
 			emitSelect(arr, this);
+			if (this._meta_.$items) {
+				// expand all parent items
+				let p = this._parent_._parent_;
+				while (p) {
+					p.$expanded = true;
+					p = p._parent_._parent_;
+					if (!p || p === this.$root)
+						break;
+				}
+			}
 		};
 	}
 
@@ -2846,7 +3052,7 @@ Vue.component('a2-pager', {
 			return null;
 		}
 		if (name in tml.delegates) {
-			return tml.delegates[name];
+			return tml.delegates[name].bind(this.$root);
 		}
 		console.error(`Delegate "${name}" not found in the template`);
 	}
@@ -3128,7 +3334,37 @@ Vue.component('a2-pager', {
 		return opts && opts.noDirty;
 	}
 
-	function merge(src, afterSave) {
+	function saveSelections() {
+		let root = this;
+		let t = root.$template;
+		let opts = t && t.options;
+		if (!opts) return;
+		let ps = opts.persistSelect;
+		if (!ps || !ps.length) return;
+		let result = {};
+		for (let p of ps) {
+			let arr = utils.simpleEval(root, p);
+			if (utils.isArray(arr)) {
+				result[p] = arr.$selectedIndex;
+			}
+		}
+		return result;
+	}
+
+
+	function restoreSelections(sels) {
+		if (!sels) return;
+		let root = this;
+		for (let p in sels) {
+			let arr = utils.simpleEval(root, p);
+			let si = sels[p];
+			if (utils.isArray(arr) && si >= 0 && si < arr.length) {
+				arr[si].$select();
+			}
+		}
+	}
+
+	function merge(src, afterSave, existsOnly) {
 		let oldId = this.$id__;
 		try {
 			if (src === null)
@@ -3164,6 +3400,8 @@ Vue.component('a2-pager', {
 					} else if (utils.isPrimitiveCtor(ctor)) {
 						platform.set(this, prop, src[prop]);
 					} else {
+						if (existsOnly && !(prop in src))
+							continue; // no item in src
 						let newsrc = new ctor(src[prop], prop, this);
 						platform.set(this, prop, newsrc);
 					}
@@ -3221,18 +3459,37 @@ Vue.component('a2-pager', {
         */
 	}
 
+	function checkPeriod(obj) {
+		let f = obj.Filter;
+		if (!f) return obj;
+		if (!('Period' in f))
+			return obj;
+		let p = f.Period;
+		if (period.like(p))
+			f.Period = new period.constructor(p);
+		return obj;
+	}
+
+	function setRootModelInfo(item, data) {
+		if (!data.$ModelInfo) return;
+		let elem = item;
+		for (let p in data.$ModelInfo) {
+			if (!elem) elem = this[p];
+			elem.$ModelInfo = checkPeriod(data.$ModelInfo[p]);
+			return; // first element only
+		}
+	}
+
 	function setModelInfo(root, info, rawData) {
 		// may be default
 		root.__modelInfo = info ? info : {
-			PageSize: 20
+			PageSize: DEFAULT_PAGE_SIZE
 		};
 		let mi = rawData.$ModelInfo;
 		if (!mi) return;
 		for (let p in mi) {
-			root[p].$ModelInfo = mi[p];
+			root[p].$ModelInfo = checkPeriod(mi[p]);
 		}
-		//console.dir(rawData.$ModelInfo);
-		//root._setModelInfo_()
 	}
 
 	app.modules['std:datamodel'] = {
@@ -3272,15 +3529,16 @@ Vue.component('a2-pager', {
 
 
 
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20180426-7167
+// 20190402-7475
 /*components/include.js*/
 
 (function () {
 
 	const http = require('std:http');
 	const urlTools = require('std:url');
+	const eventBus = require('std:eventBus');
 
 	function _destroyElement(el) {
 		let fc = el.firstElementChild;
@@ -3300,6 +3558,7 @@ Vue.component('a2-pager', {
 			src: String,
 			cssClass: String,
 			needReload: Boolean,
+			insideDialog: Boolean,
 			done: Function
 		},
 		data() {
@@ -3312,6 +3571,8 @@ Vue.component('a2-pager', {
 		methods: {
 			loaded(ok) {
 				this.loading = false;
+				if (this.insideDialog)
+					eventBus.$emit('modalCreated', this);
 				if (this.done)
 					this.done();
 			},
@@ -3325,6 +3586,12 @@ Vue.component('a2-pager', {
 			__destroy() {
 				//console.warn('include has been destroyed');
 				_destroyElement(this.$el);
+			},
+			modalRequery() {
+				if (!this.insideDialog) return;
+				setTimeout(() => {
+					this.requery();
+				}, 1);
 			}
 		},
 		computed: {
@@ -3344,7 +3611,11 @@ Vue.component('a2-pager', {
 		},
 		watch: {
 			src: function (newUrl, oldUrl) {
-				if (newUrl.split('?')[0] === oldUrl.split('?')[0]) {
+				if (this.insideDialog) {
+					// Dialog. No need to reload always.
+					this.currentUrl = newUrl;
+				}
+				else if (newUrl.split('?')[0] === oldUrl.split('?')[0]) {
 					// Only the search has changed. No need to reload.
 					this.currentUrl = newUrl;
 				}
@@ -3387,7 +3658,6 @@ Vue.component('a2-pager', {
 				_destroyElement(this.$el);
 			},
 			loaded() {
-
 			},
 			makeUrl() {
 				let arg = this.arg || '0';
@@ -3424,17 +3694,11 @@ Vue.component('a2-pager', {
 		}
 	});
 })();
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20181122-7367
+// 20190305-7456
 // components/modal.js
 
-
-/*
-			<ul v-if="hasList">
-				<li v-for="(li, lx) in dialog.list" :key="lx", v-text="li" />
-			</ul>
- */
 
 (function () {
 
@@ -3444,7 +3708,7 @@ Vue.component('a2-pager', {
 
 	const modalTemplate = `
 <div class="modal-window" @keydown.tab="tabPress" :class="mwClass">
-	<include v-if="isInclude" class="modal-body" :src="dialog.url" :done="loaded"></include>
+	<include v-if="isInclude" class="modal-body" :src="dialog.url" :done="loaded" :inside-dialog="true"></include>
 	<div v-else class="modal-body">
 		<div class="modal-header" v-drag-window><span v-text="title"></span><button ref='btnclose' class="btnclose" @click.prevent="modalClose(false)">&#x2715;</button></div>
 		<div :class="bodyClass">
@@ -3550,7 +3814,7 @@ Vue.component('a2-pager', {
 			// always need a new instance of function (modal stack)
 			return {
 				modalCreated: false,
-				keyUpHandler: function () {
+				keyUpHandler: function (event) {
 					// escape
 					if (event.which === 27) {
 						eventBus.$emit('modalClose', false);
@@ -3610,6 +3874,9 @@ Vue.component('a2-pager', {
 						this._tabElems[0].el.focus();
 					}
 				}
+			},
+			__modalRequery() {
+				alert('requery');
 			}
 		},
 		computed: {
@@ -3678,9 +3945,9 @@ Vue.component('a2-pager', {
 
 	app.components['std:modal'] = modalComponent;
 })();
-// Copyright © 2015-2018 Alex Kukhtin. All rights reserved.
+// Copyright © 2015-2019 Alex Kukhtin. All rights reserved.
 
-// 20180416-7158
+// 20190610-7499
 // components/toastr.js
 
 
@@ -3699,7 +3966,7 @@ Vue.component('a2-pager', {
 	const toastrTemplate = `
 <div class="toastr-stack" >
 	<transition-group name="list" tag="ul">
-		<a2-toast v-for="(t,k) in items" :key="k" :toast="t"></a2-toast>
+		<a2-toast v-for="(t, k) in items":toast="t" :key="t.$index"></a2-toast>
 	</transition-group>
 </div>
 `;
@@ -3877,7 +4144,7 @@ Vue.component('a2-pager', {
 
 			$format(value, dataType, hideZeros) {
 				if (!dataType) return value;
-				return utils.format(value, dataType, hideZeros);
+				return utils.format(value, dataType, { hideZeros: hideZeros });
 			},
 
 			$save(opts) {

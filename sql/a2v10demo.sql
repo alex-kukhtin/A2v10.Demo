@@ -1058,7 +1058,7 @@ begin
 	set transaction isolation level read uncommitted;
 	select [Agent!TAgent!Object] = null, [Id!!Id] = Id, [Name!!Name] = [Name], [Type], 
 		Code, Tag, Memo, Folder, ParentFolder=Parent, Phone,
-		[Address!TAddress!Object] = null,
+		[Address!TAddress!Object] = null, [Attachments!TAttachment!Array] = null,
 		DateCreated, DateModified
 	from a2demo.Agents where Id=@Id and Void=0;
 
@@ -1077,9 +1077,56 @@ begin
 	select [!TStreet!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name]
 	from a2demo.Streets where 0 <> 0; 
 
+	select [!TAttachment!Array] = null, [Id!!Id] = Id, [Name!!Name] = [Name], Mime, [!TAgent.Attachments!ParentId] = @Id,
+		[Size] = datalength([Data])
+	from a2demo.Attachments where Id < 1000 and @Id is not null;
+
 	select [Params!TParam!Object] = null, [Name] = @Name;
 end
 go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Attachment.Update')
+	drop procedure a2demo.[Agent.Attachment.Update]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Attachment.Update]
+	@TenantId int = null,
+	@UserId bigint = null,
+	@Name nvarchar(255) = null,
+	@Mime nvarchar(255) = null,
+	@Stream varbinary(max) = null
+as
+begin
+	set nocount on;
+	set transaction isolation level serializable;
+
+	declare @rtable table (Id bigint);
+	declare @RetId bigint;
+	
+	insert into a2demo.Attachments(UserId, [Name], Mime, [Data])
+		output inserted.Id into @rtable
+	values(@UserId, @Name, @Mime, @Stream);
+
+	select @RetId = Id from @rtable;
+	select Id, Mime, [Name], Size = datalength([Data]) from a2demo.Attachments where Id=@RetId;
+end
+go
+------------------------------------------------
+if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Attachment.Load')
+	drop procedure a2demo.[Agent.Attachment.Load]
+go
+------------------------------------------------
+create procedure a2demo.[Agent.Attachment.Load]
+	@TenantId int = null,
+	@UserId bigint = null,
+	@Id bigint = null,
+as
+begin
+	set nocount on;
+	set transaction isolation level read uncommitted;
+	select Id, Mime, [Name], [Size] = datalength([Data]), Stream = [Data] from a2v10demo.Attachments where Id=@Id;
+end
+gp
 ------------------------------------------------
 if exists (select * from INFORMATION_SCHEMA.ROUTINES where ROUTINE_SCHEMA=N'a2demo' and ROUTINE_NAME=N'Agent.Copy')
 	drop procedure a2demo.[Agent.Copy]
@@ -1937,6 +1984,8 @@ create procedure a2demo.[Invoice.Registry.Load]
 as
 begin
 	set nocount on;
+	if @Agent is null
+		set @Agent = @Id;
 	select [ReportData!TData!Array] = null, [Id!!Id] = Id, [Date], [No], [Sum], [Memo], DateCreated, DateModified
 	from a2demo.Documents where Agent in (@Agent)
 	order by [Date] desc;
